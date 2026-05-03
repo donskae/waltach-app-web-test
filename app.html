@@ -50,10 +50,6 @@
         .streak span { color: #FF453A; }
         .fire-icon { animation: breath 2s infinite ease-in-out; }
 
-    /* Brand logo centered in header */
-    .brand-logo { position: absolute; left: 50%; transform: translateX(-50%); font-weight: 900; font-size: 16px; letter-spacing: 1px; z-index: 25; background: linear-gradient(90deg,#FFD60A,#FF9F0A); -webkit-background-clip: text; background-clip: text; color: transparent; }
-        @keyframes breath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); filter: drop-shadow(0 0 5px #FF453A); } }
-
         /* PAGES */
     .page { display: none; flex-direction: column; min-height: 0; flex:1 1 auto; animation: fadeIn 0.3s ease; position: relative; }
         .page.active { display: flex; }
@@ -524,7 +520,7 @@
 
 <script>
     let state = {
-        coins: 12450, lvl: 12, xp: 340, maxXp: 1000, streak: 14, totalCompleted: 142,
+        coins: 378890, lvl: 178, xp: 340, maxXp: 1000, streak: 14, totalCompleted: 142,
         currentAvatar: '🦁',
         // avatarImage: dataURL string for custom uploaded avatar image
         avatarImage: null,
