@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WaltAch - Testwork</title>
+
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; }
+  body { background:#000; display:flex; justify-content:center; align-items:center; min-height:100vh; color:#fff; padding:16px; }
+  /* Hide native scrollbars globally but keep swipe/wheel scrolling active */
+  /* WebKit */
+  *::-webkit-scrollbar { width: 0; height: 0; }
+  /* Firefox */
+  * { scrollbar-width: none; -ms-overflow-style: none; }
+  /* Make phone fill available viewport for Mini Apps and allow internal scrolling */
+  .phone { width:100%; max-width:420px; border-radius:30px; overflow:visible; background: linear-gradient(180deg,#3b0000,#000); box-shadow:0 20px 60px rgba(0,0,0,0.6); position:relative; min-height:100vh; height:100vh; }
+  .screen { display:flex; flex-direction:column; height:100%; }
+
+    .top{ padding:20px; position:relative; }
+    .glow{ position:absolute; top:-80px; left:-80px; width:200px; height:200px; background:radial-gradient(circle, rgba(255,80,80,0.4), transparent 60%); filter:blur(20px); }
+    .header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+    .logo{ font-size:22px; font-weight:bold; }
+    .tag{ font-size:12px; color:#ff6b6b; }
+  /* language pill */
+  .lang-pill{ display:inline-flex; gap:8px; align-items:center; padding:6px 10px; border-radius:999px; background:rgba(255,255,255,0.04); color:#fff; font-size:13px; cursor:pointer; border:1px solid rgba(255,255,255,0.03); }
+  .lang-pill:focus{ outline:2px solid rgba(255,120,40,0.2); outline-offset:2px; }
+  .lang-flag{ width:18px; height:12px; display:inline-block; }
+  .lang-label{ font-weight:600; font-size:12px; }
+    .card{ background: rgba(255,255,255,0.05); padding:15px; border-radius:18px; backdrop-filter: blur(10px); }
+    .label{ font-size:12px; color: rgba(255,255,255,0.6); }
+    .value{ font-size:28px; font-weight:bold; margin-top:5px; }
+    .chart{ margin-top:10px; height:50px; width:100%; }
+  /* habits widget */
+  .habits{ margin-top:10px; display:flex; flex-direction:column; gap:10px; }
+  .habit{ display:flex; justify-content:space-between; align-items:center; gap:12px; }
+  .h-left{ display:flex; align-items:center; gap:10px; }
+  .dot{ width:14px; height:14px; border-radius:4px; box-shadow:0 4px 12px rgba(0,0,0,0.6); }
+  .h-label{ font-size:13px; color:rgba(255,255,255,0.9); }
+  .h-right{ display:flex; align-items:center; gap:10px; min-width:120px; }
+  .progress{ width:100px; height:10px; background:rgba(255,255,255,0.06); border-radius:10px; overflow:hidden; }
+  .progress .fill{ height:100%; width:0%; background:linear-gradient(90deg, #ff7a18, #ff3c00); border-radius:10px; transform-origin:left center; transition:width 800ms cubic-bezier(.2,.9,.2,1); }
+  .percent{ min-width:34px; text-align:right; font-size:12px; color:rgba(255,255,255,0.75); }
+    .users{ margin-top:15px; display:flex; flex-direction:column; gap:8px; }
+    .user{ display:flex; justify-content:space-between; background: rgba(255,255,255,0.05); padding:10px; border-radius:12px; font-size:13px; }
+    .user span:last-child{ color:#ff6b6b; }
+    .bottom{ padding:20px; display:flex; flex-direction:column; gap:10px; }
+    button{ padding:12px; border-radius:12px; border:none; cursor:pointer; font-size:14px; width:100%; }
+    .primary{ background:#fff; color:#000; font-weight:bold; }
+    .secondary{ background:rgba(255,255,255,0.1); color:#fff; }
+
+    /* overlay (merged email sign-in) */
+  .overlay{ position:fixed; inset:0; background: rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity 220ms ease; }
+    .overlay.visible{ opacity:1; pointer-events:auto; }
+  .modal{ width:100%; max-width:360px; padding:24px; border-radius:18px; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.4)); backdrop-filter: blur(8px); color:#fff; position:relative; }
+  .logo-wrap{ position:relative; margin-bottom:18px; }
+    .logo-wrap .glow{ position:absolute; inset:-34px; background: radial-gradient(circle, rgba(255,120,40,0.35), transparent 60%); filter:blur(20px); }
+    .logo-box{ width:90px; height:90px; margin:0 auto; border-radius:22px; background:rgba(255,255,255,0.04); display:flex; align-items:center; justify-content:center; backdrop-filter: blur(8px); }
+    .logo-box::before{ content:''; width:45px; height:45px; background:linear-gradient(135deg,#ff7a18,#ff3c00); border-radius:12px; transform:rotate(15deg); box-shadow:0 0 25px rgba(255,120,40,0.6); }
+    h1{ font-size:22px; margin-bottom:12px; font-weight:600; text-align:center; }
+    .input{ width:100%; padding:14px; border-radius:14px; border:none; outline:none; background: rgba(255,255,255,0.06); color:white; font-size:14px; margin-bottom:12px; }
+    .input::placeholder{ color: rgba(255,255,255,0.4); }
+    .btn{ width:100%; padding:14px; border-radius:14px; border:none; font-weight:600; cursor:pointer; font-size:14px; }
+    .primary-action{ background:#fff; color:#000; margin-bottom:12px; }
+    .secondary-action{ background: rgba(255,255,255,0.08); color:#fff; }
+  .modal .close{ position:absolute; right:12px; top:12px; background:transparent; border:none; color:rgba(255,255,255,0.9); font-size:20px; cursor:pointer; padding:6px; }
+  /* overlay-level close button (moved out of modal) */
+  .overlay-close{ position:absolute; right:14px; top:14px; width:44px; height:44px; background:rgba(255,255,255,0.04); border-radius:12px; border:1px solid rgba(255,255,255,0.06); color:rgba(255,255,255,0.95); font-size:20px; cursor:pointer; z-index:50; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.02); backdrop-filter: blur(6px); }
+  .overlay-close:hover{ background:rgba(255,255,255,0.06); transform:translateY(-1px); }
+
+  /* brand block and animations */
+  .brand{ display:flex; gap:12px; align-items:flex-start; padding:18px 16px 28px; }
+  .brand .logo-mark{ width:48px; height:48px; border-radius:10px; background:linear-gradient(135deg,#ff7a18,#ff3c00); box-shadow:0 10px 30px rgba(255,120,40,0.12); transform:translateY(6px); }
+  .brand .brand-text{ color:rgba(255,255,255,0.9); }
+  .brand .brand-text h4{ margin:0 0 6px; font-size:16px; }
+  .brand .brand-text p{ margin:0; font-size:13px; color:rgba(255,255,255,0.7); line-height:1.25; }
+  /* larger motivational block */
+  .motivation{ display:flex; gap:12px; align-items:center; padding:14px; border-radius:14px; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,120,40,0.03)); box-shadow: 0 12px 30px rgba(255,120,40,0.06); }
+  .motivation .logo-mark{ width:48px; height:48px; border-radius:10px; box-shadow:0 10px 30px rgba(255,120,40,0.12); background:linear-gradient(135deg,#ff7a18,#ff3c00); }
+  .motivation .title{ font-size:15px; font-weight:700; color:#fff; margin-bottom:6px; }
+  .motivation .subtitle{ font-size:13px; color:rgba(255,255,255,0.78); line-height:1.25; }
+  .motivation .tagline{ margin-top:8px; font-size:12px; color:rgba(255,255,255,0.66); }
+
+  /* habit journey block */
+  .habit-journey{ display:flex; gap:12px; align-items:flex-start; padding:12px; border-radius:12px; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02)); }
+  .habit-journey .journey-visual{ flex:0 0 72px; display:flex; align-items:center; justify-content:center; }
+  .habit-journey .journey-copy{ flex:1; display:flex; flex-direction:column; gap:8px; }
+  .habit-journey .stage-title{ font-weight:700; color:#fff; font-size:13px; }
+  .habit-journey .stage-desc{ font-size:12px; color:rgba(255,255,255,0.7); }
+  .habit-journey .node{ transition:transform 320ms ease, fill 320ms ease; }
+  .habit-journey .node.active{ transform-origin:center; }
+
+  /* traveler animation and path shimmer */
+  .habit-journey .traveler{ transform-box: fill-box; transform-origin:36px 60px; filter: drop-shadow(0 6px 12px rgba(255,255,255,0.06)); }
+  @keyframes travel {
+    0% { transform: translateY(-36px); opacity:0; }
+    8% { opacity:1; }
+    30% { transform: translateY(-36px); }
+    55% { transform: translateY(0px); }
+    80% { transform: translateY(36px); }
+    95% { opacity:0.6; }
+    100% { transform: translateY(-36px); opacity:0; }
+  }
+  .habit-journey .traveler{ animation: travel 4s ease-in-out infinite; }
+
+  .habit-journey .traveler-halo{ transform-box: fill-box; transform-origin:36px 60px; }
+  .habit-journey .traveler-halo{ animation: travel 4s ease-in-out infinite; }
+
+  @keyframes dash {
+    from { stroke-dashoffset: 0; }
+    to { stroke-dashoffset: 20; }
+  }
+  #pathLine{ stroke-dasharray: 6 6; animation: dash 3s linear infinite; }
+
+  @keyframes float { 0%{ transform:translateY(0);}50%{ transform:translateY(-6px);}100%{ transform:translateY(0);} }
+  .habit-journey .node.active{ animation: float 1.8s ease-in-out infinite; filter: drop-shadow(0 8px 20px rgba(255,120,40,0.18)); }
+
+  @keyframes popIn { from { opacity:0; transform:scale(0.96); } to { opacity:1; transform:scale(1); } }
+  .animate-pop{ animation: popIn 320ms cubic-bezier(.2,.9,.2,1) both; }
+
+  /* TG overlay animate via visible class */
+  #tgOverlay .tg-card{ transform:scale(.98); opacity:0; transition:transform 220ms ease, opacity 220ms ease; }
+  #tgOverlay.visible .tg-card{ transform:scale(1); opacity:1; }
+
+  /* ensure telegram modal overlays the viewport and is reachable */
+  #tgOverlay{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:1200; }
+  #tgOverlay .tg-sheet{ width:100%; max-width:420px; padding:12px; box-sizing:border-box; }
+
+    @media (max-width:480px){ .value{font-size:24px;} .logo{font-size:20px;} .logo-box{width:80px;height:80px;} }
+
+    /* Responsive device font-size breakpoints (iPhone / Android ranges) */
+    /* iPhone 15 */
+    @media (min-width: 320px) and (max-width: 340px) {
+      html { font-size: 12px; }
+      .top{ padding:14px; }
+      .card { padding:12px; border-radius:14px; }
+      .brand .logo-mark{ width:40px; height:40px; }
+      .brand .brand-text h4{ font-size:14px; }
+      .value{ font-size:20px; }
+      .habit-journey .journey-visual{ flex:0 0 56px; }
+      .habit-journey svg{ width:56px; height:96px; }
+      .tabs{ height:64px; }
+      .home-bar{ bottom:8px; width:72px; }
+    }
+    /* iPhone 12 Mini, 13 */
+    @media (min-width: 330px) and (max-width: 350px) {
+      html { font-size: 13px; }
+      .top{ padding:16px; }
+      .card { padding:13px; }
+      .brand .logo-mark{ width:42px; height:42px; }
+      .value{ font-size:22px; }
+      .habit-journey .journey-visual{ flex:0 0 60px; }
+      .habit-journey svg{ width:60px; height:102px; }
+      .tabs{ height:66px; }
+      .home-bar{ bottom:9px; width:78px; }
+    }
+    /* iPhone 11 Pro */
+    @media (min-width: 340px) and (max-width: 375px) {
+      html { font-size: 14px; }
+      .top{ padding:18px; }
+      .card{ padding:14px; }
+      .value{ font-size:24px; }
+      .habit-journey .journey-visual{ flex:0 0 66px; }
+      .habit-journey svg{ width:66px; height:110px; }
+    }
+    /* iPhone 12, 13, 14 */
+    @media (min-width: 350px) and (max-width: 390px) {
+      html { font-size: 15px; }
+    }
+    /* iPhone 12 Pro Max, 14 Pro */
+    @media (min-width: 390px) and (max-width: 430px) {
+      html { font-size: 16px; }
+    }
+    /* iPhone 15 Pro, 16 */
+    @media (min-width: 400px) {
+      html { font-size: 17px; }
+    }
+
+    /* Very small phones / narrow devices: avoid cramped layout */
+    @media (max-width: 320px) {
+      html { font-size: 11px; }
+      .phone{ min-height: 680px; }
+      .logo{ font-size:18px; }
+      .tag{ font-size:11px; }
+      .card{ border-radius:12px; }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="phone">
+  <div class="top">
+    <div class="glow"></div>
+    <div class="header">
+      <div class="logo">WaltAch</div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <div class="tag">Dashboard</div>
+        <button id="langPill" class="lang-pill" aria-label="Change language" title="Toggle language">
+          <svg class="lang-flag" id="langFlag" viewBox="0 0 3 2" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <!-- default EN: simple UK/US-styled stripe (abstract) -->
+            <rect width="3" height="2" fill="#ffffff" opacity="0.9" />
+          </svg>
+          <span class="lang-label" id="langLabel">EN</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+  <div class="label" id="streakLabel">Your current streak</div>
+  <div class="value" id="streakValue">7 days</div>
+  <div class="label" id="streakMsg" style="margin-top:6px; font-size:12px; color:rgba(255,255,255,0.6);">Keep up the momentum — you've completed 7 days in a row.</div>
+
+      <div class="brand" id="brandBlock" aria-hidden="false" style="margin-top:12px;">
+        <div class="logo-mark" aria-hidden="true"></div>
+        <div class="brand-text">
+          <h4 id="brandTitle">Walt AI</h4>
+          <p id="brandDesc">your destination for discovering, creating and selling digital products.</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="users-placeholder" style="margin-top:14px;">
+      <div class="habit-journey animate-pop" id="habitJourney">
+        <div class="journey-visual" aria-hidden="true">
+          <svg width="72" height="120" viewBox="0 0 72 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path id="pathLine" d="M36 8 V112" stroke="rgba(255,255,255,0.06)" stroke-width="4" stroke-linecap="round" />
+            <circle class="node idle" cx="36" cy="24" r="8" fill="#3a3a3a" />
+            <!-- removed static central orange node to keep only traveler + halo -->
+            <circle class="node idle" cx="36" cy="96" r="8" fill="#3a3a3a" />
+            <circle class="traveler-halo" cx="36" cy="60" r="8" fill="#ff7a18" opacity="0.18" />
+            <circle class="traveler" cx="36" cy="60" r="4" fill="#fff" />
+          </svg>
+        </div>
+        <div class="journey-copy">
+          <div class="stage">
+            <div class="stage-title" id="stage1Title">Idle</div>
+            <div class="stage-desc" id="stage1Desc">Nothing happens when you wait — ideas remain ideas.</div>
+          </div>
+          <div class="stage">
+            <div class="stage-title" id="stage2Title">Practice</div>
+            <div class="stage-desc" id="stage2Desc">Small consistent actions: writing, tracking, repeating.</div>
+          </div>
+          <div class="stage">
+            <div class="stage-title" id="stage3Title">Mastered</div>
+            <div class="stage-desc" id="stage3Desc">Habits become automatic — dreams feel closer.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Telegram permission modal (native-style sheet) -->
+  <div class="overlay" id="tgOverlay">
+    <div class="tg-sheet" role="dialog" aria-modal="true" aria-labelledby="tgTitle" style="width:92%; max-width:360px; display:flex; flex-direction:column; align-items:stretch; gap:8px; padding:0 12px;">
+      <div class="tg-card" style="background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 18px 40px rgba(0,0,0,0.45);">
+        <div class="tg-body" style="padding:18px; text-align:center;">
+          <h3 id="tgTitle" style="margin:0 0 8px; font-size:17px; color:#111; font-weight:700;">Allow "WaltAch"?</h3>
+          <p id="tgBody" style="margin:0; font-size:13px; color:#4a4a4a;">The app requests access to your Telegram name and profile photo to sync progress.</p>
+        </div>
+        <div class="tg-actions-row" style="display:flex; border-top:1px solid #e6e6e6;">
+          <button id="tgCancel" style="flex:1;padding:14px 12px;background:transparent;border:none;color:#007aff;font-weight:600;border-right:1px solid #e6e6e6;">Decline</button>
+          <button id="tgAllow" style="flex:1;padding:14px 12px;background:transparent;border:none;color:#007aff;font-weight:700;">Allow</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <button class="primary" id="signupBtn">Sign up</button>
+    <button class="secondary" id="tgBtn">Sign in with Telegram</button>
+  </div>
+
+  <!-- overlay modal (email sign-in) -->
+  <div class="overlay" id="overlay">
+  <button class="close overlay-close" id="closeBtn" aria-label="Close dialog" title="Close">✕</button>
+    <div class="modal" role="dialog" aria-modal="true">
+    <div class="logo-wrap"><div class="glow"></div><div class="logo-box"></div></div>
+    <h1 id="signinTitle">Sign in to WaltAch</h1>
+  <input class="input" type="email" id="emailInput" placeholder="Your email" />
+  <div class="footer" id="agreement" style="margin-bottom:12px; font-size:11px; color:rgba(255,255,255,0.35);">By clicking "Continue" you agree to our Privacy Policy and Terms &amp; Conditions.</div>
+  <button class="btn primary-action" id="continueBtn">Continue</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+
+
+  // habits widget animation: animate fills on load and nudge periodically
+  function animateHabits() {
+    const fills = document.querySelectorAll('.progress .fill');
+    fills.forEach((f, idx) => {
+      const val = parseInt(f.getAttribute('data-value') || '0', 10);
+      // staggered animation
+      setTimeout(() => { f.style.width = val + '%'; const pct = f.parentElement.nextElementSibling; if(pct) pct.textContent = val + '%'; }, idx * 160);
+    });
+
+    // gentle periodic updates (simulate small progress increments)
+    setInterval(() => {
+      fills.forEach(f => {
+        let cur = parseInt(f.style.width || '0', 10);
+        const target = parseInt(f.getAttribute('data-value') || '0', 10);
+        // nudge target slightly +/- 5
+        const delta = Math.floor(Math.random() * 7) - 3; // -3..+3
+        let newVal = Math.max(3, Math.min(98, target + delta));
+        f.setAttribute('data-value', newVal);
+        f.style.width = newVal + '%';
+        const pct = f.parentElement.nextElementSibling;
+        if(pct) pct.textContent = newVal + '%';
+      });
+    }, 4200);
+  }
+
+  // start habits animation when DOM is ready
+  window.addEventListener('load', () => { animateHabits(); });
+
+  
+
+  // overlay show/hide
+  const signupBtn = document.getElementById('signupBtn');
+  const overlay = document.getElementById('overlay');
+  const closeBtn = document.getElementById('closeBtn');
+  signupBtn.addEventListener('click', () => { overlay.classList.add('visible'); document.getElementById('emailInput').focus(); });
+  closeBtn.addEventListener('click', () => overlay.classList.remove('visible'));
+  overlay.addEventListener('click', (e) => { if(e.target === overlay) overlay.classList.remove('visible'); });
+
+  // close overlay on Escape
+  document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && overlay.classList.contains('visible')) overlay.classList.remove('visible'); });
+
+  // Continue action - hide overlay then navigate to app.html (preserve any localStorage changes)
+  document.getElementById('continueBtn').addEventListener('click', () => {
+    overlay.classList.remove('visible');
+    // small delay so modal visually closes before navigation
+    setTimeout(() => { window.location.href = 'app.html'; }, 120);
+  });
+
+  // Telegram permission modal handlers
+  const tgBtn = document.getElementById('tgBtn');
+  const tgOverlay = document.getElementById('tgOverlay');
+  const tgAllow = document.getElementById('tgAllow');
+  const tgCancel = document.getElementById('tgCancel');
+
+  function openTg() { tgOverlay.classList.add('visible'); }
+  function closeTg() { tgOverlay.classList.remove('visible'); }
+
+  // tgBtn handler replaced below to manage focus when opening
+  tgCancel.addEventListener('click', () => { closeTg(); });
+
+  tgAllow.addEventListener('click', () => {
+    // simulate receiving Telegram user info and storing it
+    const demo = { id: 123456789, username: 'demo_user', first_name: 'Demo', last_name: 'User' };
+    localStorage.setItem('waltach_tg', JSON.stringify(demo));
+    closeTg();
+    // navigate to the app page after allowing Telegram
+    setTimeout(() => { window.location.href = 'app.html'; }, 120);
+  });
+
+  // close tg overlay on outside click
+  tgOverlay.addEventListener('click', (e) => { if(e.target === tgOverlay) closeTg(); });
+
+  // close tg overlay on Escape and focus management
+  document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && tgOverlay.classList.contains('visible')) closeTg(); });
+  // when opening, place focus on the Decline button for keyboard users
+  const origOpenTg = openTg;
+  function openTgWithFocus(){ origOpenTg(); try{ tgCancel.focus({ preventScroll:true }); }catch(e){} }
+  // replace handler to use focus helper
+  tgBtn.addEventListener('click', () => { openTgWithFocus(); });
+
+  // Streak persistence and interaction
+  const streakKey = 'waltach_streak';
+  const streakDateKey = 'waltach_last_check';
+  const streakValueEl = document.getElementById('streakValue');
+  const streakMsgEl = document.getElementById('streakMsg');
+
+  function readStreak(){
+    const v = parseInt(localStorage.getItem(streakKey) || '0', 10);
+    const last = localStorage.getItem(streakDateKey) || null;
+    return {v, last};
+  }
+
+  function formatStreak(v){ return v + (v===1? ' day':' days'); }
+
+  function updateStreakUI(){
+    const s = readStreak();
+    streakValueEl.textContent = formatStreak(s.v);
+    // localized messages
+    const lang = (localStorage.getItem(langKey) || 'en');
+    const msgs = (i18n && i18n[lang] && i18n[lang].streakMsgs) ? i18n[lang].streakMsgs : i18n.en.streakMsgs;
+    if(s.v <= 0) streakMsgEl.textContent = msgs.zero;
+    else if(s.v < 3) streakMsgEl.textContent = msgs.small;
+    else if(s.v < 7) streakMsgEl.textContent = msgs.med;
+    else streakMsgEl.textContent = msgs.high;
+  }
+
+  function animPop(el){ el.style.transition='transform 220ms ease'; el.style.transform='scale(1.06)'; setTimeout(()=>{ el.style.transform=''; },220); }
+
+  // init streak UI on load
+  window.addEventListener('load', () => { updateStreakUI(); });
+
+  // animate brand entrance
+  window.addEventListener('load', () => { const b = document.getElementById('brandBlock'); if(b) b.classList.add('animate-pop'); });
+  window.addEventListener('load', () => { const m = document.getElementById('motivationBlock'); if(m) m.classList.add('animate-pop'); });
+  // nudge the active journey node periodically
+  function nudgeJourney(){
+    const active = document.querySelector('.habit-journey .node.active');
+    if(!active) return;
+    active.animate([
+      { transform: 'scale(1)' },
+      { transform: 'scale(1.08)' },
+      { transform: 'scale(1)' }
+    ], { duration: 900, easing: 'ease-in-out' });
+  }
+  setInterval(nudgeJourney, 1800);
+
+  // --- Language pill (EN / UA) ---
+  const langKey = 'waltach_lang';
+  const langPill = document.getElementById('langPill');
+  const langLabel = document.getElementById('langLabel');
+  const langFlag = document.getElementById('langFlag');
+
+  // simple i18n map for EN and UA (expandable)
+  const i18n = {
+    en: {
+      dashboard: 'Dashboard',
+      signup: 'Sign up',
+      signin_tg: 'Sign in with Telegram',
+      streakLabel: 'Your current streak',
+      streakMsgs: {
+        zero: 'Start a streak today — small steps add up.',
+        small: 'Nice — keep going!',
+        med: 'Great work — you are building momentum.',
+        high: 'Amazing! You are on fire 🔥 Keep that streak alive.'
+      }
+      ,
+      brandTitle: 'Walt AI',
+      brandDesc: 'your destination for discovering, creating and selling digital products.',
+      stages: [
+        { title: 'Idle', desc: 'Nothing happens when you wait — ideas remain ideas.' },
+        { title: 'Practice', desc: 'Small consistent actions: writing, tracking, repeating.' },
+        { title: 'Mastered', desc: 'Habits become automatic — dreams feel closer.' }
+      ]
+      ,
+      modals: {
+        signinTitle: 'Sign in to WaltAch',
+        signinPlaceholder: 'Your email',
+        signinAgreement: 'By clicking "Continue" you agree to our Privacy Policy and Terms & Conditions.',
+        tgTitle: 'Allow "WaltAch"?',
+        tgBody: 'The app requests access to your Telegram name and profile photo to sync progress.',
+        tgAllow: 'Allow',
+        tgDecline: 'Decline',
+        continue: 'Continue'
+      }
+    },
+    ua: {
+      dashboard: 'Панель',
+      signup: 'Зареєструватись',
+      signin_tg: 'Увійти через Telegram',
+      streakLabel: 'Поточна серія',
+      streakMsgs: {
+        zero: 'Розпочніть серію сьогодні — маленькі кроки важливі.',
+        small: 'Молодець — так тримати!',
+        med: 'Чудово — ви набираєте обертів.',
+        high: 'Неймовірно! Ви вогонь 🔥 Продовжуйте.'
+      }
+      ,
+      brandTitle: 'Walt AI',
+      brandDesc: 'ваше місце для відкриття, створення та продажу цифрових продуктів.',
+      stages: [
+        { title: 'Idle', desc: 'Нічого не відбувається, коли ви чекаєте — ідеї залишаються ідеями.' },
+        { title: 'Practice', desc: 'Невеликі послідовні дії: писати, відстежувати, повторювати.' },
+        { title: 'Mastered', desc: 'Звички стають автоматичними — мрії здаються ближчими.' }
+      ]
+      ,
+      modals: {
+        signinTitle: 'Увійти до WaltAch',
+        signinPlaceholder: 'Ваша електронна пошта',
+        signinAgreement: 'Натиснувши "Продовжити", ви погоджуєтесь з нашою Політикою конфіденційності та Умовами.',
+        tgTitle: 'Дозволити "WaltAch"?',
+        tgBody: 'Додаток запитує доступ до вашого імені та фото профілю Telegram для синхронізації прогресу.',
+        tgAllow: 'Дозволити',
+        tgDecline: 'Відхилити',
+        continue: 'Продовжити'
+      }
+    }
+  };
+
+  function applyTranslations(lang){
+    try{
+      const tagEl = document.querySelector('.tag');
+      if(tagEl) tagEl.textContent = i18n[lang].dashboard;
+      if(signupBtn) signupBtn.textContent = i18n[lang].signup;
+      if(tgBtn) tgBtn.textContent = i18n[lang].signin_tg;
+      const sLabel = document.getElementById('streakLabel');
+      if(sLabel) sLabel.textContent = i18n[lang].streakLabel;
+      // brand block
+      const bTitle = document.getElementById('brandTitle');
+      const bDesc = document.getElementById('brandDesc');
+      if(bTitle) bTitle.textContent = i18n[lang].brandTitle || bTitle.textContent;
+      if(bDesc) bDesc.textContent = i18n[lang].brandDesc || bDesc.textContent;
+      // journey stages
+      const s1t = document.getElementById('stage1Title');
+      const s1d = document.getElementById('stage1Desc');
+      const s2t = document.getElementById('stage2Title');
+      const s2d = document.getElementById('stage2Desc');
+      const s3t = document.getElementById('stage3Title');
+      const s3d = document.getElementById('stage3Desc');
+      if(s1t) s1t.textContent = i18n[lang].stages[0].title;
+      if(s1d) s1d.textContent = i18n[lang].stages[0].desc;
+      if(s2t) s2t.textContent = i18n[lang].stages[1].title;
+      if(s2d) s2d.textContent = i18n[lang].stages[1].desc;
+      if(s3t) s3t.textContent = i18n[lang].stages[2].title;
+      if(s3d) s3d.textContent = i18n[lang].stages[2].desc;
+      // refresh streak message to localized variant
+      updateStreakUI();
+    }catch(e){ console.warn('i18n apply failed', e); }
+  }
+
+  // translate modal texts/buttons/placeholders
+  function applyModalTranslations(lang){
+    try{
+      const mod = i18n[lang].modals || i18n.en.modals;
+      const sTitle = document.getElementById('signinTitle');
+      if(sTitle) sTitle.textContent = mod.signinTitle;
+      const emailInput = document.getElementById('emailInput');
+      if(emailInput) emailInput.placeholder = mod.signinPlaceholder;
+      const agreement = document.getElementById('agreement');
+      if(agreement) agreement.textContent = mod.signinAgreement;
+      const tgT = document.getElementById('tgTitle');
+      const tgB = document.getElementById('tgBody');
+      if(tgT) tgT.textContent = mod.tgTitle;
+      if(tgB) tgB.textContent = mod.tgBody;
+      const allowBtn = document.getElementById('tgAllow');
+      const declineBtn = document.getElementById('tgCancel');
+      if(allowBtn) allowBtn.textContent = mod.tgAllow;
+      if(declineBtn) declineBtn.textContent = mod.tgDecline;
+      const cont = document.getElementById('continueBtn');
+      if(cont) cont.textContent = mod.continue;
+    }catch(e){ console.warn('modal i18n failed', e); }
+  }
+
+  function renderFlag(lang){
+    // simple inline flag render (keeps file small) - using abstract shapes
+    if(!langFlag) return;
+    if(lang === 'ua'){
+      langFlag.innerHTML = '<rect width="3" height="1" y="0" fill="#0057b7" /><rect width="3" height="1" y="1" fill="#ffd700" />';
+    } else {
+      // EN: simplified US flag (striped with blue canton) - compact for viewBox 3x2
+      langFlag.innerHTML = '' +
+        '<rect width="3" height="2" fill="#b22234" />' +
+        '<rect y="0.25" width="3" height="0.25" fill="#ffffff" />' +
+        '<rect y="0.75" width="3" height="0.25" fill="#ffffff" />' +
+        '<rect y="1.25" width="3" height="0.25" fill="#ffffff" />' +
+        '<rect x="0" y="0" width="1.1" height="1" fill="#3c3b6e" />' +
+        // a few small white stars as tiny rects/points
+        '<rect x="0.08" y="0.12" width="0.06" height="0.06" fill="#fff" />' +
+        '<rect x="0.28" y="0.12" width="0.06" height="0.06" fill="#fff" />' +
+        '<rect x="0.08" y="0.32" width="0.06" height="0.06" fill="#fff" />' +
+        '<rect x="0.28" y="0.32" width="0.06" height="0.06" fill="#fff" />';
+    }
+  }
+
+  function readLang(){ return localStorage.getItem(langKey) || 'en'; }
+  function writeLang(l){ localStorage.setItem(langKey, l); }
+
+  function setLang(l){
+    writeLang(l);
+    if(langLabel) langLabel.textContent = l.toUpperCase();
+    renderFlag(l);
+    applyTranslations(l);
+    applyModalTranslations(l);
+    // small pop animation for feedback
+    try{ langPill.classList.remove('animate-pop'); void langPill.offsetWidth; langPill.classList.add('animate-pop'); }catch(e){}
+  }
+
+  // toggle between en <-> ua
+  function toggleLang(){ const cur = readLang(); setLang(cur === 'ua' ? 'en' : 'ua'); }
+
+  if(langPill){
+    // initialize from storage
+    setLang(readLang());
+    langPill.addEventListener('click', (e) => { toggleLang(); });
+    langPill.addEventListener('keydown', (e) => { if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleLang(); } });
+  }
+</script>
+
+</body>
+</html>

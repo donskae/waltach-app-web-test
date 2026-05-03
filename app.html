@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WaltAch - Трекер звичок (UI/UX App) </title>
+    <style>
+        :root {
+            --ios-font: "SF Pro Display", -apple-system, sans-serif;
+            --brand: #FF9F0A;
+            --brand-glow: rgba(255, 159, 10, 0.4);
+            --xp: #30D158;
+            --coin: #FFD60A;
+            --bg: #000;
+            --glass: rgba(255, 255, 255, 0.04);
+            --border: rgba(255, 255, 255, 0.1);
+            --danger: #FF453A;
+            --accent-blue: #0A84FF;
+        }
+
+    /* Page background matches phone gradient so the whole viewport blends with the phone shell */
+    body { background: linear-gradient(180deg,#2b0000,#000); display:flex; justify-content:center; align-items:center; min-height:100vh; color:#fff; padding:16px; font-family: var(--ios-font); margin:0; }
+    /* Make phone fill available viewport for Mini Apps and allow internal scrolling */
+    .phone { width:100%; max-width:420px; border-radius:30px; overflow:visible; background: linear-gradient(180deg,#3b0000,#000); box-shadow:0 20px 60px rgba(0,0,0,0.6); position:relative; min-height:100vh; height:100vh; }
+    .screen { width:100%; background:transparent; border-radius:0; position:relative; overflow:hidden; display:flex; flex-direction:column; height:100%; }
+
+    /* background glow removed for compact mobile layout */
+    .bg-glow { display: none; }
+
+    /* match firstpage spacing and small UI tokens */
+    .top{ padding:20px; position:relative; }
+    .glow{ position:absolute; top:-80px; left:-80px; width:200px; height:200px; background:radial-gradient(circle, rgba(255,80,80,0.4), transparent 60%); filter:blur(20px); }
+    .logo{ font-size:22px; font-weight:bold; }
+    .tag{ font-size:12px; color:#ff6b6b; }
+    .card{ background: rgba(255,255,255,0.05); padding:15px; border-radius:18px; backdrop-filter: blur(10px); }
+
+    /* STATUS BAR (iPhone-style) */
+    /* island/status notch removed for simplified mobile UI */
+    .island { display: none; }
+    .status-bar { display: none; }
+
+    /* HEADER (compact for mobile) */
+    .header { display: flex; justify-content: space-between; padding: 18px 16px 8px; align-items: center; z-index: 20; }
+        .currency, .streak { 
+            display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.05); 
+            padding: 8px 14px; border-radius: 20px; border: 1px solid var(--border); font-weight: 700; backdrop-filter: blur(10px);
+            font-size: 14px;
+        }
+        .streak { border-color: rgba(255, 69, 58, 0.2); }
+        .streak span { color: #FF453A; }
+        .fire-icon { animation: breath 2s infinite ease-in-out; }
+
+    /* Brand logo centered in header */
+    .brand-logo { position: absolute; left: 50%; transform: translateX(-50%); font-weight: 900; font-size: 16px; letter-spacing: 1px; z-index: 25; background: linear-gradient(90deg,#FFD60A,#FF9F0A); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        @keyframes breath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); filter: drop-shadow(0 0 5px #FF453A); } }
+
+        /* PAGES */
+    .page { display: none; flex-direction: column; min-height: 0; flex:1 1 auto; animation: fadeIn 0.3s ease; position: relative; }
+        .page.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* HERO CARD */
+        .hero-card { position: relative; padding: 10px 0; display: flex; flex-direction: column; align-items: center; z-index: 10; }
+        .username { font-size: 14px; font-weight: 600; color: #888; margin-bottom: 8px; letter-spacing: 0.5px; }
+    .hero-circle { width: 140px; height: 140px; border-radius: 50%; background: radial-gradient(circle, rgba(30,30,30,0.8) 0%, transparent 100%); display: flex; align-items: center; justify-content: center; position: relative; border: 1px solid rgba(255,159,10,0.2); }
+    /* ensure uploaded avatar images do not overflow the circular frame */
+    .hero-circle { overflow: hidden; }
+    .current-avatar-display { display:flex; align-items:center; justify-content:center; width:100%; height:100%; }
+    .current-avatar-display img { width:100%; height:100%; object-fit:cover; display:block; border-radius:50%; }
+    /* avatar frames */
+    .avatar-frame { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; z-index:2; box-sizing: border-box; }
+    /* ensure frames are drawn inside the hero circle so they are not clipped by overflow */
+    .avatar-frame.frame1 { box-shadow: 0 0 10px rgba(255,200,60,0.18); border: 3px solid rgba(255,215,120,0.9); animation: pulseGold 2600ms infinite linear; }
+    @keyframes pulseGold { 0% { box-shadow: 0 0 6px rgba(255,200,60,0.12); } 50% { box-shadow: 0 0 20px rgba(255,200,60,0.28); } 100% { box-shadow: 0 0 6px rgba(255,200,60,0.12); } }
+    .avatar-frame.frame2 { border: 2px solid transparent; background: conic-gradient(from 0deg, rgba(10,132,255,0.5), rgba(48,209,88,0.5), rgba(255,45,85,0.5), rgba(255,159,10,0.5)); background-clip: padding-box; -webkit-background-clip: padding-box; animation: rotateNeon 4200ms linear infinite; filter: blur(2px); }
+    @keyframes rotateNeon { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    /* small plus/handle above avatar */
+    /* handle overlay centered on avatar */
+    .avatar-handle { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width:28px; height:28px; border-radius:50%; background: linear-gradient(90deg,#FFD60A,#FF9F0A); display:flex; align-items:center; justify-content:center; color:#000; font-weight:900; box-shadow: 0 6px 18px rgba(255,159,10,0.12); cursor: pointer; border: 2px solid rgba(255,255,255,0.06); font-size:13px; z-index:12; }
+    .avatar-remove-icon { position: absolute; top: 6px; right: 6px; width:22px; height:22px; border-radius:50%; background: rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:center; cursor:pointer; font-weight:700; font-size:11px; z-index:12; }
+        .hero-circle::before { content: ''; position: absolute; inset: -5px; border-radius: 50%; border: 2px solid transparent; border-top-color: var(--brand); animation: rotate 4s linear infinite; opacity: 0.5; }
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .avatar { font-size: 70px; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.6)); z-index: 2; }
+    .level-badge { margin-top: -15px; background: var(--brand); color: #000; padding: 4px 16px; border-radius: 12px; font-weight: 900; font-size: 13px; z-index: 120; box-shadow: 0 5px 15px var(--brand-glow); }
+
+        /* XP PANEL */
+        .xp-panel { width: 75%; margin-top: 25px; background: var(--glass); padding: 12px 18px; border-radius: 24px; border: 1px solid var(--border); backdrop-filter: blur(15px); }
+        .xp-info { display: flex; justify-content: space-between; font-size: 10px; font-weight: 800; color: #888; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .xp-bar-bg { width: 100%; height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden; }
+        .xp-bar-fill { height: 100%; background: linear-gradient(90deg, var(--xp), #b2ff59); box-shadow: 0 0 10px rgba(48, 209, 88, 0.3); transition: width 0.8s ease; }
+
+        /* CONTENT AREA */
+    .content { flex: 1 1 auto; overflow-y: auto; padding: 0 24px 120px; scrollbar-width: none; z-index: 10; }
+        /* hide native scrollbars but keep scrolling functional */
+        .content::-webkit-scrollbar { width: 0; height: 0; }
+        .content { -ms-overflow-style: none; scrollbar-width: none; }
+        .content::-webkit-scrollbar { display: none; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin: 25px 0 15px; }
+        .section-header h2 { margin: 0; font-size: 22px; font-weight: 800; }
+
+        /* HABITS & QUESTS */
+        .add-quest-btn { background: var(--brand); border: none; width: 38px; height: 38px; border-radius: 12px; font-weight: 900; cursor: pointer; font-size: 20px; }
+        .habit-card { background: var(--glass); border-radius: 22px; padding: 16px 18px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); transition: 0.3s; }
+        .habit-card.done { opacity: 0.4; transform: scale(0.98); }
+        .habit-actions { display: flex; align-items: center; gap: 12px; }
+        .delete-btn { color: var(--danger); background: none; border: none; font-size: 20px; cursor: pointer; opacity: 0.5; }
+        .check-circle { width: 30px; height: 30px; border: 2px solid rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
+        .check-circle.active { background: var(--xp); border-color: var(--xp); color: #000; }
+
+        /* REWARD POPUP ANIMATION */
+        .reward-popup {
+            position: absolute; pointer-events: none; font-weight: 900; font-size: 14px;
+            animation: floatUp 1.2s cubic-bezier(0.2, 0.6, 0.3, 1) forwards;
+            z-index: 1000; display: flex; flex-direction: column; align-items: center; gap: 2px;
+        }
+        @keyframes floatUp {
+            0% { opacity: 0; transform: translateY(0) scale(0.5); }
+            20% { opacity: 1; transform: translateY(-20px) scale(1.1); }
+            100% { opacity: 0; transform: translateY(-60px) scale(1); }
+        }
+        .popup-xp { color: var(--xp); text-shadow: 0 0 10px rgba(48, 209, 88, 0.5); }
+        .popup-coin { color: var(--coin); text-shadow: 0 0 10px rgba(255, 214, 10, 0.5); }
+
+        /* SHOP CAROUSEL STYLES */
+        .shop-container { display: flex; flex-direction: column; align-items: center; padding-top: 10px; }
+        .shop-carousel { display: flex; align-items: center; justify-content: center; width: 100%; height: 200px; position: relative; perspective: 1000px; margin-bottom: 10px; }
+        .carousel-card { 
+            position: absolute; width: 140px; height: 180px; 
+            background: linear-gradient(145deg, #1a1a1a, #0a0a0a); 
+            border: 1px solid var(--border); border-radius: 30px; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 70px; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); 
+            opacity: 0; pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+    /* inventory cards should be positioned relative for badges; carousel cards remain absolute for proper 3D layout */
+    #inventory-grid .inv-card { position: relative; }
+        .carousel-card.active { opacity: 1; transform: translateZ(0) scale(1.1); z-index: 10; border-color: var(--brand); box-shadow: 0 0 30px var(--brand-glow); }
+        .carousel-card.prev { opacity: 0.4; transform: translateX(-100px) rotateY(35deg) scale(0.8); z-index: 5; }
+        .carousel-card.next { opacity: 0.4; transform: translateX(100px) rotateY(-35deg) scale(0.8); z-index: 5; }
+
+        .item-details { text-align: center; margin: 15px 0; min-height: 90px; }
+        .item-details h3 { margin: 0; font-size: 22px; }
+        .item-details p { color: #888; font-size: 13px; margin: 6px 0; }
+        .price-tag { color: var(--coin); font-size: 18px; font-weight: 900; }
+
+        .shop-controls { display: flex; align-items: center; gap: 25px; margin-bottom: 25px; }
+        .nav-btn { background: var(--glass); border: 1px solid var(--border); color: white; width: 44px; height: 44px; border-radius: 50%; font-size: 24px; cursor: pointer; }
+        .dots-container { display: flex; gap: 6px; }
+        .dot { width: 5px; height: 5px; background: #333; border-radius: 50%; transition: 0.3s; }
+        .dot.active { background: var(--brand); transform: scale(1.6); }
+
+    /* small frame preview inside shop card */
+    .card-preview { width: 86px; height: 86px; border-radius: 50%; background: radial-gradient(circle, rgba(20,20,20,0.9), transparent 60%); display:flex; align-items:center; justify-content:center; position: absolute; top: 18px; }
+    .card-preview .preview-avatar { width:78px; height:78px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; font-size:36px; }
+    .card-preview .preview-avatar img { width:100%; height:100%; object-fit:cover; display:block; }
+    /* ensure the preview frame uses same frame classes, but scaled down */
+    .card-preview .avatar-frame { inset: -4px; border-radius:50%; pointer-events:none; z-index:5; }
+    .card-preview .avatar-frame.frame1 { border-width:3px; filter: drop-shadow(0 6px 18px rgba(255,200,60,0.18)); }
+    .card-preview .avatar-frame.frame2 { border-width:2px; filter: blur(2px); }
+    .equipped-badge { position: absolute; top: 8px; right: 8px; background: linear-gradient(90deg,#30D158,#0A84FF); color:#000; font-weight:900; font-size:10px; padding:4px 6px; border-radius:8px; z-index:80; }
+
+        .main-action-btn { 
+            width: 85%; background: var(--brand); color: black; border: none; 
+            padding: 18px; border-radius: 22px; font-weight: 900; font-size: 15px; 
+            cursor: pointer; box-shadow: 0 10px 20px var(--brand-glow); transition: 0.3s;
+        }
+        .main-action-btn.owned { background: var(--xp); }
+
+        /* ARENA & SEARCH */
+        .arena-search-card { 
+            background: linear-gradient(135deg, #1a1a1a, #000); padding: 30px 20px; border-radius: 28px;
+            text-align: center; border: 1px solid var(--border); margin-bottom: 25px; position: relative; overflow: hidden;
+        }
+        .arena-search-card::after { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: conic-gradient(transparent, var(--accent-blue), transparent 30%); animation: radar 3s linear infinite; opacity: 0.1; }
+        @keyframes radar { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        
+        .battle-card { background: rgba(10, 132, 255, 0.05); border: 1px solid rgba(10, 132, 255, 0.2); border-radius: 22px; padding: 20px; margin-bottom: 15px; display: flex; align-items: center; gap: 15px; }
+    /* hide large decorative battle icons to declutter the mobile UI */
+    .battle-icon { display: none; }
+        .battle-btn { width: 100%; background: var(--accent-blue); color: white; border: none; padding: 18px; border-radius: 20px; font-weight: 800; cursor: pointer; box-shadow: 0 10px 25px rgba(10, 132, 255, 0.3); transition: 0.3s; }
+
+        #id-input-container {
+            margin-bottom: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        #search-view { display: none; text-align: center; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 0 24px; }
+        .search-timer { font-size: 32px; font-weight: 900; margin: 20px 0; color: var(--accent-blue); }
+
+        /* PROFILE STATS */
+        .profile-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+        .stat-card { background: var(--glass); border: 1px solid var(--border); padding: 15px; border-radius: 20px; }
+        .stat-card h4 { margin: 0; font-size: 11px; color: #888; text-transform: uppercase; }
+        .stat-card p { margin: 8px 0 0; font-size: 16px; font-weight: 800; }
+        .stat-card.full { grid-column: span 2; display: flex; align-items: center; gap: 15px; }
+
+        /* NAVIGATION & MODALS */
+        .tabs { position: absolute; bottom: 0; width: 100%; height: 90px; background: rgba(5,5,5,0.8); backdrop-filter: blur(20px); border-top: 1px solid var(--border); display: flex; justify-content: space-around; align-items: center; padding-bottom: 20px; box-sizing: border-box; z-index: 100; }
+        .tab-btn { font-size: 24px; opacity: 0.3; cursor: pointer; transition: 0.3s; padding: 10px 20px; }
+        .tab-btn.active { opacity: 1; filter: drop-shadow(0 0 8px var(--brand-glow)); color: var(--brand); }
+
+        .modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 2000; display: none; align-items: flex-end; }
+        .modal-overlay.active { display: flex; }
+        .modal-window { width: 100%; background: #1c1c1e; border-radius: 40px 40px 0 0; padding: 30px; border: 1px solid var(--border); box-sizing: border-box; }
+        .modal-input { width: 100%; background: var(--glass); border: 1px solid var(--border); padding: 15px; border-radius: 15px; color: white; margin-bottom: 15px; box-sizing: border-box; outline: none; }
+        
+        /* DIFFICULTY TAGS */
+        .diff-tag { font-size: 9px; padding: 2px 8px; border-radius: 6px; text-transform: uppercase; font-weight: 900; }
+        .diff-easy { background: rgba(48, 209, 88, 0.1); color: var(--xp); }
+        .diff-medium { background: rgba(255, 159, 10, 0.1); color: var(--brand); }
+        .diff-hard { background: rgba(255, 69, 58, 0.1); color: var(--danger); }
+        /* Language buttons */
+        .lang-btn { background: transparent; border: 1px solid rgba(255,255,255,0.06); color: white; padding: 8px 12px; border-radius: 12px; cursor: pointer; font-weight:700; }
+        .lang-btn.active { background: var(--brand); color: #000; border-color: transparent; box-shadow: 0 8px 20px var(--brand-glow); }
+    /* nicer avatar buttons */
+    .avatar-btn { padding: 8px 12px; border-radius: 14px; font-weight: 800; cursor: pointer; border: none; }
+    .avatar-btn.upload { background: linear-gradient(90deg,#FFD60A,#FF9F0A); color: #000; box-shadow: 0 10px 30px rgba(255,159,10,0.12); }
+    .avatar-btn.upload:hover { transform: translateY(-2px); }
+    .avatar-btn.remove { background: rgba(255,255,255,0.04); color: #fff; border: 1px solid rgba(255,255,255,0.06); }
+    .avatar-btn.remove:hover { background: rgba(255,69,58,0.08); color: var(--danger); }
+    /* Inventory styles */
+    #inventory-grid { margin-top: 6px; }
+    /* ensure grid children can shrink and don't force columns wider */
+    #inventory-grid .inv-card { background: rgba(255,255,255,0.03); border-radius: 12px; padding: 10px 8px; display:flex; flex-direction:column; align-items:center; justify-content:space-between; min-height:82px; box-sizing:border-box; min-width:0; }
+    #inventory-grid .inv-icon { font-size:28px; line-height:1; }
+    #inventory-grid .inv-name { font-size:12px; margin-top:6px; color:#ddd; width:100%; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    #inventory-grid .inv-btn { margin-top:8px; padding:6px 8px; font-size:12px; border-radius:10px; }
+    /* Compact promo badge to avoid long/wide promo cards */
+    #inventory-grid .inv-card.promo { padding: 8px 6px; gap: 6px; }
+    .promo-badge { width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; background: linear-gradient(180deg, rgba(255,159,10,0.15), rgba(255,159,10,0.03)); border:1px solid rgba(255,159,10,0.08); box-shadow: 0 6px 18px rgba(0,0,0,0.6); }
+    .promo-label { font-size:11px; color:#ccc; font-weight:800; margin-top:4px; }
+    /* Confirm modal & toast (compact, centered card) */
+    .confirm-overlay { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; z-index: 3000; }
+    .confirm-overlay.active { display: flex; }
+    .confirm-window { background: linear-gradient(180deg,#0f0f10,#070707); border-radius: 14px; padding: 14px; width: 320px; box-shadow: 0 18px 50px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.04); text-align:center; transform: scale(0.92); opacity: 0; animation: popIn 260ms cubic-bezier(.2,.9,.3,1) forwards; }
+    @keyframes popIn { to { transform: scale(1); opacity: 1; } }
+    .confirm-top { display:flex; align-items:center; gap:12px; justify-content:center; }
+    .confirm-icon { width:56px; height:56px; border-radius:12px; background: rgba(255,255,255,0.02); display:flex; align-items:center; justify-content:center; font-size:28px; }
+    .confirm-name { font-weight:800; font-size:15px; margin-top:2px; }
+    .confirm-desc { font-size:12px; color:#bdbdbd; margin-top:6px; }
+    .confirm-price { margin-top:10px; font-weight:900; color: var(--coin); }
+    .confirm-actions { display:flex; gap:10px; justify-content:center; margin-top:12px; }
+    .btn-primary { background: var(--brand); color:#000; border:none; padding:10px 14px; border-radius:12px; font-weight:900; cursor:pointer; }
+    .btn-ghost { background: transparent; color:white; border:1px solid rgba(255,255,255,0.06); padding:8px 12px; border-radius:12px; cursor:pointer; }
+    .toast { position: absolute; left: 50%; transform: translateX(-50%); bottom: 110px; background: rgba(0,0,0,0.8); padding: 10px 14px; border-radius: 12px; border: 1px solid var(--border); display:none; z-index:4000; }
+    /* Level-up modal */
+    .levelup-overlay { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; z-index: 5000; }
+    .levelup-overlay.active { display:flex; }
+    .levelup-window { background: linear-gradient(180deg,#101214,#060607); border-radius: 16px; padding: 18px; width: 340px; text-align:center; border: 1px solid rgba(255,255,255,0.03); box-shadow: 0 18px 60px rgba(0,0,0,0.75); transform: translateY(10px); opacity: 0; animation: levelPop 360ms cubic-bezier(.2,.9,.3,1) forwards; }
+    @keyframes levelPop { to { transform: translateY(0); opacity: 1; } }
+    .levelup-window h2 { margin: 0 0 6px; font-size: 20px; letter-spacing:0.6px; }
+    .levelup-window p { margin: 8px 0 0; color: #dcdcdc; font-size: 14px; }
+    .level-badge-big { display:inline-block; margin-top:8px; background: linear-gradient(90deg,#ffd166,#ff9f0a); color:#000; padding:8px 14px; border-radius: 999px; font-weight:900; box-shadow: 0 6px 20px rgba(255,159,10,0.12); }
+    /* Confetti pieces */
+    .confetti { position: absolute; width:10px; height:14px; opacity:0.95; border-radius:2px; transform: translateY(0) rotate(0deg); animation: confettiFall 1600ms linear forwards; }
+    @keyframes confettiFall { to { transform: translateY(220px) rotate(520deg); opacity: 0; } }
+        /* bottom home indicator (draggable) — compact */
+        .home-bar { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); width: 90px; height: 5px; background: rgba(255,255,255,0.32); border-radius: 10px; z-index: 1200; touch-action: none; cursor: grab; }
+            /* Responsive device font-size breakpoints (iPhone / Android ranges) */
+            @media (min-width: 320px) and (max-width: 340px) {
+                html { font-size: 12px; }
+                .top{ padding:14px; }
+                .hero-circle{ width:110px; height:110px; }
+                .level-badge{ font-size:12px; padding:4px 12px; }
+                .xp-panel{ width: 84%; }
+                .content{ padding: 0 14px 100px; }
+                .tabs{ height:64px; }
+                .home-bar{ bottom:8px; width:72px; }
+            }
+            @media (min-width: 330px) and (max-width: 350px) {
+                html { font-size: 13px; }
+                .top{ padding:16px; }
+                .hero-circle{ width:120px; height:120px; }
+                .xp-panel{ width: 80%; }
+                .content{ padding: 0 18px 110px; }
+                .tabs{ height:66px; }
+                .home-bar{ bottom:9px; width:78px; }
+            }
+            @media (min-width: 340px) and (max-width: 375px) {
+                html { font-size: 14px; }
+                .top{ padding:18px; }
+                .hero-circle{ width:132px; height:132px; }
+                .xp-panel{ width: 78%; }
+            }
+            @media (min-width: 350px) and (max-width: 390px) {
+                html { font-size: 15px; }
+            }
+            @media (min-width: 390px) and (max-width: 430px) {
+                html { font-size: 16px; }
+            }
+            @media (min-width: 400px) {
+                html { font-size: 17px; }
+            }
+
+            /* Very small phones / narrow devices: avoid cramped layout */
+            @media (max-width: 320px) {
+                html { font-size: 11px; }
+                .phone{ min-height: 680px; }
+                .hero-circle{ width:96px; height:96px; }
+                .tabs{ height:60px; }
+            }
+    .home-bar:active { cursor: grabbing; }
+    /* reduce tabs height for compact mobile layout */
+    .tabs { height: 68px; padding-bottom: 12px; }
+    /* Ensure shop page reserves extra bottom padding so the buy button is not hidden behind the tabs */
+    #page-shop .content { padding-bottom: 160px !important; }
+    /* Make the main buy button sit slightly above the tabs on small screens */
+    .shop-container .main-action-btn { position: relative; z-index: 30; margin-bottom: 6px; }
+    </style>
+</head>
+<body>
+
+<div class="phone">
+    <div class="screen">
+        <div class="bg-glow"></div>
+        <div class="island"></div>
+        <div class="status-bar" id="top-bar">
+        </div>
+
+        <div class="header">
+            <div class="currency">💰 <span id="coin-val">12,450</span></div>
+            <div class="brand-logo">WaltAch</div>
+            <div class="streak">
+                <span class="fire-icon">🔥</span>
+                <span id="streak-val">14</span>
+            </div>
+        </div>
+
+        <div id="page-home" class="page active">
+            <div class="hero-card">
+                <div class="username">@topovdmitriy</div>
+                <div class="hero-circle"><div class="avatar current-avatar-display">🦁</div></div>
+                <div class="level-badge">LVL <span id="lvl-num">12</span></div>
+                <div class="xp-panel">
+                    <div class="xp-info"><span>XP PROGRESS</span><span id="xp-text">340 / 1000</span></div>
+                    <div class="xp-bar-bg"><div id="xp-bar" class="xp-bar-fill" style="width: 34%;"></div></div>
+                </div>
+            </div>
+            <div class="content">
+                <div class="section-header">
+                    <h2 id="lbl-quests">Твои Квесты</h2>
+                    <button class="add-quest-btn" onclick="openModal()">+</button>
+                </div>
+                <div id="quest-list"></div>
+            </div>
+        </div>
+
+        <div id="page-arena" class="page">
+            <div id="arena-content" class="content">
+                <div class="section-header"><h2 id="lbl-arena">Арена</h2></div>
+                <div class="arena-search-card">
+                    <h3 id="lbl-arena-mode" style="margin: 0; font-size: 16px;">Режим битвы</h3>
+                    <p id="lbl-rank" style="color: #666; font-size: 12px; margin-top: 6px;">Твой ранг: Золото III</p>
+                </div>
+
+                <div id="id-input-container" style="display: none;">
+                    <input type="text" id="room-id-input" class="modal-input" placeholder="Введите ID комнаты..." style="margin-bottom: 10px;">
+                    <button class="battle-btn" onclick="joinRoom()" style="background: var(--xp); padding: 12px; box-shadow: none;">ПОДКЛЮЧИТЬСЯ</button>
+                </div>
+
+                <div class="battle-card">
+                    <div style="flex: 1;"><h4 id="lbl-blitz" style="margin: 0; font-size: 15px;">Блиц-дуэль</h4><p id="lbl-blitz-desc" style="margin: 4px 0 0; font-size: 12px; color: #888;">Заверши 3 привычки быстрее</p></div>
+                    <div style="text-align: right;"><span style="color: var(--xp); font-weight: 800;">+200 XP</span></div>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button class="battle-btn" id="btn-find" onclick="startSearch()" style="flex: 4;">НАЙТИ ОППОНЕНТА</button>
+                    <button class="battle-btn" id="btn-toggle-id" onclick="toggleIdInput()" style="flex: 1; background: var(--glass); border: 1px solid var(--border); box-shadow: none;">
+                        <span style="font-size: 18px;">ID</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="search-view">
+                <div style="font-size: 60px; animation: rotate 2s infinite linear;">⚔️</div>
+                <h2 style="margin-top: 20px;" id="search-status">Ищем оппонента...</h2>
+                <div class="search-timer" id="timer-val">00:00</div>
+                <button class="nav-btn" id="btn-cancel-search" style="width:auto; padding:0 25px; border-radius:15px; font-size:14px;" onclick="cancelSearch()">ОТМЕНА</button>
+            </div>
+        </div>
+
+        <div id="page-shop" class="page">
+            <div class="content" style="padding: 0;">
+                <div class="section-header" style="padding: 25px 24px 0;"><h2 id="lbl-shop">Магазин</h2></div>
+                <div class="shop-container">
+                    <div class="shop-carousel" id="shop-carousel"></div>
+                    <div class="item-details">
+                        <h3 id="sel-name">Загрузка...</h3>
+                        <p id="sel-desc">Описание предмета</p>
+                        <div class="price-tag" id="sel-price">0 💰</div>
+                    </div>
+                    <div class="shop-controls">
+                        <button class="nav-btn" id="shop-prev" onclick="prevItem()">‹</button>
+                        <div class="dots-container" id="dots"></div>
+                        <button class="nav-btn" id="shop-next" onclick="nextItem()">›</button>
+                    </div>
+                    <button class="main-action-btn" id="buy-btn" onclick="handleShopAction()">КУПИТЬ</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-profile" class="page">
+            <div class="content" style="padding-top: 20px;">
+                <div class="hero-card" style="padding-bottom: 20px;">
+                    <div class="hero-circle" style="width: 100px; height: 100px;">
+                        <div class="avatar current-avatar-display" style="font-size: 50px;">🦁</div>
+                    </div>
+                    <h2 style="margin: 15px 0 5px;">Дмитрий Вальт</h2>
+                    <div class="diff-tag diff-medium">Elite Emplighter</div>
+                    <input id="avatar-input" type="file" accept="image/*" style="display:none" />
+                    <div class="avatar-handle" id="avatar-handle">+</div>
+                    <div class="avatar-remove-icon" id="avatar-remove-icon">✖</div>
+                </div>
+                <div class="profile-stats-grid">
+                    <div class="stat-card"><h4 id="lbl-played-since">Учавствует в тестировании с </h4><p id="played-since">01.02.2026</p></div>
+                    <div class="stat-card"><h4 id="lbl-goals">Целей</h4><p id="total-done">142</p></div>
+                    <div class="stat-card full">
+                        <div style="font-size: 24px;">🍏</div>
+                        <div><h4 id="lbl-health">Фитнес Трекер</h4><p id="lbl-health-desc" style="font-size:12px;">Apple Health подключен</p></div>
+                    </div>
+                </div>
+                <div style="margin-top:18px;">
+                    <label id="lbl-interface-lang" style="display:block; margin-bottom:8px; font-weight:700;">Язык интерфейса</label>
+                    <div style="display:flex; gap:8px;">
+                        <!--<button class="lang-btn" id="lang-ru" onclick="setLanguage('ru')">Русский</button>!-->
+                        <button class="lang-btn" id="lang-ua" onclick="setLanguage('ua')">Українська</button>
+                        <button class="lang-btn" id="lang-en" onclick="setLanguage('en')">English</button>
+                    </div>
+                </div>
+
+                <div style="margin-top:18px;">
+                    <h3 id="lbl-inventory" style="margin: 6px 0;">Инвентарь</h3>
+                    <div id="inventory-grid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top:8px;"></div>
+                </div>
+
+                <button onclick="location.reload()" style="width:100%; margin-top:12px; background:rgba(255,69,58,0.1); border:1px solid var(--danger); color:var(--danger); padding:15px; border-radius:18px; font-weight:800; cursor:pointer;" id="btn-logout">ВЫЙТИ</button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab-btn" id="tab-arena" onclick="switchPage('arena')">⚔️</div>
+            <div class="tab-btn active" id="tab-home" onclick="switchPage('home')">📌</div>
+            <div class="tab-btn" id="tab-shop" onclick="switchPage('shop')">🛒</div>
+            <div class="tab-btn" id="tab-profile" onclick="switchPage('profile')">👤</div>
+        </div>
+
+    <div class="home-bar"></div>
+
+        <div id="modal-overlay" class="modal-overlay">
+            <div class="modal-window">
+                <h2 id="modal-title" style="margin: 0 0 20px;">Новый квест</h2>
+                <input type="text" id="quest-input" class="modal-input" placeholder="Что нужно сделать?">
+                <button id="modal-create" onclick="confirmAddQuest()" style="width:100%; background:var(--brand); border:none; padding:15px; border-radius:15px; font-weight:900; cursor:pointer;">СОЗДАТЬ</button>
+                <p id="modal-cancel" onclick="closeModal()" style="text-align:center; color:#555; margin-top:15px; cursor:pointer;">Отмена</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <div id="confirm-overlay" class="confirm-overlay">
+        <div class="confirm-window">
+            <div class="confirm-top">
+                <div id="confirm-icon" class="confirm-icon">🏷️</div>
+                <div>
+                    <div id="confirm-name" class="confirm-name">Промокод</div>
+                    <div id="confirm-desc" class="confirm-desc">Короткое описание промокода</div>
+                </div>
+            </div>
+            <div id="confirm-price" class="confirm-price">3000 💰</div>
+            <div class="confirm-actions">
+                <button id="confirm-ok" class="btn-primary">ПОДТВЕРДИТЬ</button>
+                <button id="confirm-cancel" class="btn-ghost">ОТМЕНА</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="purchase-toast" class="toast">Успешно</div>
+
+    <div id="levelup-overlay" class="levelup-overlay">
+        <div class="levelup-window">
+            <h2 id="levelup-title">Уровень повышен!</h2>
+            <div id="levelup-level" style="font-weight:900; font-size:18px; margin-top:6px;">LVL 1 → 2</div>
+            <p id="levelup-msg">Молодец! Продолжай в том же духе и достигнешь новых высот.</p>
+            <div style="margin-top:12px;"><button id="levelup-ok" class="lang-btn">OK</button></div>
+        </div>
+    </div>
+
+    <div id="promo-overlay" class="confirm-overlay">
+        <div class="confirm-window">
+            <div class="confirm-top">
+                <div id="promo-icon" class="confirm-icon">🎟️</div>
+                <div>
+                    <div id="promo-name" class="confirm-name">Промокод</div>
+                    <div id="promo-desc" class="confirm-desc">Описание промокода</div>
+                </div>
+            </div>
+            <div id="promo-code" class="confirm-price">WALTACH-XXXXX</div>
+            <div class="confirm-actions">
+                <button id="promo-copy" class="btn-primary">Copy</button>
+                <button id="promo-close" class="btn-ghost">Close</button>
+            </div>
+            <p style="font-size:12px; color:#bbb; margin-top:8px;" id="promo-warning">Не говорите никому этот код</p>
+        </div>
+    </div>
+
+    <div id="avatar-confirm-overlay" class="confirm-overlay">
+        <div class="confirm-window">
+            <div class="confirm-top">
+                <div class="confirm-icon" id="avatar-preview-icon">👤</div>
+                <div>
+                    <div id="avatar-confirm-name" class="confirm-name">Применить аватар?</div>
+                    <div id="avatar-confirm-desc" class="confirm-desc">Просмотрите изображение перед применением</div>
+                </div>
+            </div>
+            <div style="margin-top:12px; text-align:center;">
+                <img id="avatar-preview" src="" style="width:120px; height:120px; object-fit:cover; border-radius:12px; border:1px solid rgba(255,255,255,0.06);" />
+            </div>
+            <div class="confirm-actions" style="margin-top:14px;">
+                <button id="avatar-apply" class="btn-primary">ПРИМЕНИТЬ</button>
+                <button id="avatar-cancel" class="btn-ghost">ОТМЕНА</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    let state = {
+        coins: 12450, lvl: 12, xp: 340, maxXp: 1000, streak: 14, totalCompleted: 142,
+        currentAvatar: '🦁',
+        // avatarImage: dataURL string for custom uploaded avatar image
+        avatarImage: null,
+        // activeFrame: currently equipped avatar frame id
+        activeFrame: null,
+        ownedItems: ['🦁'],
+        // activeItems: list of item ids that are 'equipped' or activated in the inventory
+        activeItems: [],
+        // promoCodes stored by item id -> code string
+        promoCodes: {},
+        habits: [
+            { id: 1, title: 'Утренняя зарядка', xp: 50, coin: 20, done: false, diffName: 'Легко', diffClass: 'diff-easy' },
+            { id: 2, title: 'Кодинг проекта', xp: 120, coin: 50, done: false, diffName: 'Средне', diffClass: 'diff-medium' }
+        ]
+    };
+
+    // Persistence helpers: save/load state subset (ownedItems, currentAvatar, activeItems, coins)
+    function savePlayerState() {
+        const toSave = {
+            coins: state.coins,
+            currentAvatar: state.currentAvatar,
+            ownedItems: state.ownedItems,
+            activeItems: state.activeItems
+            , promoCodes: state.promoCodes
+            , avatarImage: state.avatarImage
+            , activeFrame: state.activeFrame
+        };
+        localStorage.setItem('waltach_player', JSON.stringify(toSave));
+    }
+
+    function loadPlayerState() {
+        try {
+            const raw = localStorage.getItem('waltach_player');
+            if (!raw) return;
+            const shopState = JSON.parse(raw);
+            if (shopState.coins !== undefined) state.coins = shopState.coins;
+            if (shopState.currentAvatar) state.currentAvatar = shopState.currentAvatar;
+            if (Array.isArray(shopState.ownedItems)) state.ownedItems = shopState.ownedItems;
+            if (Array.isArray(shopState.activeItems)) state.activeItems = shopState.activeItems;
+            if (shopState.promoCodes && typeof shopState.promoCodes === 'object') state.promoCodes = shopState.promoCodes;
+            if (shopState.avatarImage) state.avatarImage = shopState.avatarImage;
+            if (shopState.activeFrame) state.activeFrame = shopState.activeFrame;
+        } catch(e) { console.warn('Failed to load player state', e); }
+    }
+
+    // Render inventory in profile
+    function renderInventory() {
+        const grid = document.getElementById('inventory-grid');
+        if(!grid) return;
+        grid.innerHTML = '';
+        // Map ownedItems to shopItems where possible
+        const byId = {};
+        shopItems.forEach(si => byId[si.id] = si);
+        state.ownedItems.forEach(owned => {
+                // owned could be icon string or id
+                const item = byId[owned] || shopItems.find(s => s.icon === owned) || { id: owned, name: owned, icon: owned };
+                const isActive = (item.type === 'frame' && state.activeFrame === item.id) || state.activeItems.includes(item.id) || (item.type === 'avatar' && state.currentAvatar === item.icon);
+                const card = document.createElement('div');
+                card.className = 'inv-card';
+                // For promo items render a compact square badge and short label to avoid stretching
+                if (item.type === 'promo') {
+                    card.classList.add('promo');
+                    const badge = document.createElement('div'); badge.className = 'promo-badge'; badge.innerText = item.icon || '🏷️';
+                    const label = document.createElement('div'); label.className = 'promo-label';
+                    // short promo label from translations
+                    const promoLabel = (i18n[currentLang] && i18n[currentLang].inventoryPromoShort) || ((i18n[currentLang] && i18n[currentLang].inventoryPromo) || 'Код');
+                    label.innerText = promoLabel;
+                    const btn = document.createElement('button'); btn.className = 'lang-btn inv-btn'; btn.style.marginTop = '6px'; btn.innerText = promoLabel;
+                    btn.onclick = () => showPromoCode(item.id);
+                    card.appendChild(badge);
+                    card.appendChild(label);
+                    card.appendChild(btn);
+                } else {
+                    if (item.type === 'frame') {
+                        // visual preview for frame: small circle with avatar and frame overlay
+                        const preview = document.createElement('div'); preview.style.width = '60px'; preview.style.height = '60px'; preview.style.borderRadius = '50%'; preview.style.background = 'radial-gradient(circle, rgba(20,20,20,0.9), transparent 60%)'; preview.style.display = 'flex'; preview.style.alignItems = 'center'; preview.style.justifyContent = 'center'; preview.style.marginBottom = '6px'; preview.style.position = 'relative';
+                        if (state.avatarImage) {
+                            const img = document.createElement('img'); img.src = state.avatarImage; img.style.width = '100%'; img.style.height = '100%'; img.style.objectFit = 'cover'; img.style.borderRadius = '50%'; preview.appendChild(img);
+                        } else {
+                            const a = document.createElement('div'); a.style.fontSize = '28px'; a.innerText = state.currentAvatar || '🦁'; preview.appendChild(a);
+                        }
+                        const frameEl = document.createElement('div'); frameEl.className = `avatar-frame ${item.id}`; frameEl.style.inset = '0'; preview.appendChild(frameEl);
+                        const name = document.createElement('div'); name.className = 'inv-name'; name.title = item.name || item.id; name.innerText = item.name || item.id;
+                        const btn = document.createElement('button'); btn.className = 'lang-btn inv-btn';
+                        const activeLabel = (i18n[currentLang] && i18n[currentLang].inventoryActiveShort) || ((i18n[currentLang] && i18n[currentLang].inventoryActive) || 'Активно');
+                        const useLabel = (i18n[currentLang] && i18n[currentLang].inventoryUseShort) || ((i18n[currentLang] && i18n[currentLang].inventoryUse) || 'Использовать');
+                        btn.innerText = isActive ? activeLabel : useLabel;
+                        btn.onclick = () => toggleEquip(item);
+                        card.appendChild(preview); card.appendChild(name); card.appendChild(btn);
+                    } else {
+                        const icon = document.createElement('div'); icon.className = 'inv-icon'; icon.innerText = item.icon || '';
+                        const name = document.createElement('div'); name.className = 'inv-name'; name.title = (i18n[currentLang] && i18n[currentLang].shop_items && i18n[currentLang].shop_items[item.id]) ? i18n[currentLang].shop_items[item.id].name : (item.name || item.id);
+                        name.innerText = name.title;
+                        const btn = document.createElement('button'); btn.className = 'lang-btn inv-btn';
+                        const activeLabel = (i18n[currentLang] && i18n[currentLang].inventoryActiveShort) || ((i18n[currentLang] && i18n[currentLang].inventoryActive) || 'Активно');
+                        const useLabel = (i18n[currentLang] && i18n[currentLang].inventoryUseShort) || ((i18n[currentLang] && i18n[currentLang].inventoryUse) || 'Использовать');
+                        btn.innerText = isActive ? activeLabel : useLabel;
+                        btn.onclick = () => toggleEquip(item);
+                        card.appendChild(icon); card.appendChild(name); card.appendChild(btn);
+                    }
+                }
+                // If this owned item is a frame and it's equipped, show a small badge
+                if (item.type === 'frame' && state.activeFrame === item.id) {
+                    const b = document.createElement('div'); b.className = 'equipped-badge'; b.innerText = (i18n[currentLang] && i18n[currentLang].selected) ? i18n[currentLang].selected : 'ON';
+                    card.appendChild(b);
+                }
+                grid.appendChild(card);
+            });
+    }
+
+    function toggleEquip(item) {
+        // For avatars: set currentAvatar
+        if (item.type === 'avatar') {
+            state.currentAvatar = item.icon;
+            // do not add to activeItems; avatar is represented by currentAvatar
+        } else if (item.type === 'frame') {
+            // toggle activeFrame
+            if (state.activeFrame === item.id) state.activeFrame = null;
+            else state.activeFrame = item.id;
+        } else {
+            const idx = state.activeItems.indexOf(item.id);
+            if (idx >= 0) state.activeItems.splice(idx,1);
+            else state.activeItems.push(item.id);
+        }
+        savePlayerState();
+        render(); updateShopUI(); renderInventory();
+    }
+
+    const shopItems = [
+        { id: 'av1', name: "Хитрый Лис", desc: "Увеличивает шанс награды", icon: "🦊", price: 1200, type: 'avatar' },
+        { id: 'av2', name: "Дракон", desc: "Облик для мастеров", icon: "🐉", price: 2500, type: 'avatar' },
+        { id: 'it1', name: "V.I.P Статус", desc: "Удваивает монеты", icon: "💎", price: 8000, type: 'item' },
+        { id: 'promo1', name: "Скидка: 20% на сервис X", desc: "Промокод для сервиса X — применится при покупке", icon: "🏷️", price: 3000, type: 'promo' },
+        { id: 'promo2', name: "Промокод: 50% на Y", desc: "Единоразовый промокод на Y", icon: "🎟️", price: 5000, type: 'promo' },
+        { id: 'av3', name: "Киборг", desc: "Технологичное будущее", icon: "🦾", price: 1500, type: 'avatar' },
+        { id: 'av4', name: "Лев", desc: "Стандартный облик", icon: "🦁", price: 0, type: 'avatar' },
+        // frames
+        { id: 'frame1', name: 'Золотая рамка', desc: 'Анимированная золотая рамка вокруг аватара', icon: '', price: 2000, type: 'frame' },
+        { id: 'frame2', name: 'Неоновая рамка', desc: 'Неоновая рамка с переливами', icon: '', price: 3500, type: 'frame' }
+    ];
+
+    let shopIndex = 0;
+    let timerInterval;
+
+    function switchPage(pageId) {
+        cancelSearch();
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+        document.getElementById('page-' + pageId).classList.add('active');
+        document.getElementById('tab-' + pageId).classList.add('active');
+        if(pageId === 'shop') initShop();
+    }
+
+    /* SHOP LOGIC */
+    function initShop() {
+        const carousel = document.getElementById('shop-carousel');
+        const dots = document.getElementById('dots');
+        carousel.innerHTML = ''; dots.innerHTML = '';
+        shopItems.forEach((item, i) => {
+            const card = document.createElement('div');
+            card.className = 'carousel-card';
+            card.id = `scard-${i}`;
+            // base icon + optional preview container for frames
+            card.innerHTML = item.icon;
+            if (item.type === 'frame') {
+                const preview = document.createElement('div');
+                preview.className = 'card-preview';
+                preview.innerHTML = `<div class="preview-avatar"><div class="preview-inner">${state.currentAvatar || '🦁'}</div></div>`;
+                // append preview placeholder; frame will be added/updated in updateShopUI
+                card.appendChild(preview);
+            }
+            carousel.appendChild(card);
+            const dot = document.createElement('div');
+            dot.className = 'dot';
+            dot.id = `sdot-${i}`;
+            dots.appendChild(dot);
+        });
+        updateShopUI();
+    }
+
+    function updateShopUI() {
+        shopItems.forEach((_, i) => {
+            const card = document.getElementById(`scard-${i}`);
+            const dot = document.getElementById(`sdot-${i}`);
+            if(!card || !dot) return;
+            card.className = 'carousel-card';
+            dot.className = 'dot';
+            if (i === shopIndex) { card.classList.add('active'); dot.classList.add('active'); }
+            else if (i === (shopIndex - 1 + shopItems.length) % shopItems.length) card.classList.add('prev');
+            else if (i === (shopIndex + 1) % shopItems.length) card.classList.add('next');
+        });
+        const item = shopItems[shopIndex];
+        // Use translations for shop item if present
+        const shopMap = (i18n[currentLang] && i18n[currentLang].shop_items) ? i18n[currentLang].shop_items[item.id] : null;
+        document.getElementById('sel-name').innerText = shopMap && shopMap.name ? shopMap.name : item.name;
+        document.getElementById('sel-desc').innerText = shopMap && shopMap.desc ? shopMap.desc : item.desc;
+    const priceText = item.price > 0 ? `${item.price.toLocaleString()} 💰` : (i18n[currentLang] ? i18n[currentLang].free : 'БЕСПЛАТНО');
+    document.getElementById('sel-price').innerText = priceText;
+        
+        const btn = document.getElementById('buy-btn');
+        const isOwned = state.ownedItems.includes(item.icon) || state.ownedItems.includes(item.id);
+        const map = i18n[currentLang] || i18n.ru;
+        // Active logic: owned and activated depending on type
+        let isActive = false;
+        if (item.type === 'avatar') isActive = (item.icon === state.currentAvatar);
+        else if (item.type === 'frame') isActive = (state.activeFrame === item.id);
+        else isActive = state.activeItems.includes(item.id);
+        if (isActive) {
+            btn.innerText = map.selected; btn.classList.add('owned');
+        } else if (isOwned) {
+            // owned but not active
+            btn.innerText = item.type === 'avatar' ? map.choose : (item.type === 'frame' ? map.choose : map.active);
+            btn.classList.add('owned');
+        } else {
+            btn.innerText = map.buy; btn.classList.remove('owned');
+        }
+        // update any preview inside the visible card (for frames)
+        shopItems.forEach((sitem, idx) => {
+            const card = document.getElementById(`scard-${idx}`);
+            if (!card) return;
+            const preview = card.querySelector('.card-preview');
+            if (!preview) return;
+            const avatarWrap = preview.querySelector('.preview-avatar');
+            // render avatar (use uploaded image if set)
+            avatarWrap.innerHTML = '';
+            const imgWrapper = document.createElement('div'); imgWrapper.className = 'preview-avatar-inner';
+            if (state.avatarImage) {
+                const img = document.createElement('img'); img.src = state.avatarImage; img.style.width='100%'; img.style.height='100%'; img.style.objectFit='cover'; imgWrapper.appendChild(img);
+            } else {
+                imgWrapper.style.display = 'flex'; imgWrapper.style.alignItems = 'center'; imgWrapper.style.justifyContent = 'center'; imgWrapper.style.fontSize = '36px'; imgWrapper.innerText = state.currentAvatar || '🦁';
+            }
+            avatarWrap.appendChild(imgWrapper);
+            // remove old small frame if present
+            const old = preview.querySelector('.avatar-frame'); if (old) old.remove();
+            // if the item represented by this card (sitem) is a frame, add small frame element
+            if (sitem.type === 'frame') {
+                const f = document.createElement('div'); f.className = `avatar-frame ${sitem.id}`;
+                preview.appendChild(f);
+                // badge on preview if equipped
+                const oldBadge = card.querySelector('.equipped-badge'); if (oldBadge) oldBadge.remove();
+                if (state.activeFrame === sitem.id) {
+                    const b = document.createElement('div'); b.className = 'equipped-badge'; b.innerText = (i18n[currentLang] && i18n[currentLang].selected) ? i18n[currentLang].selected : 'ON';
+                    card.appendChild(b);
+                }
+            }
+            else {
+                const oldBadge = card.querySelector('.equipped-badge'); if (oldBadge) oldBadge.remove();
+            }
+        });
+    }
+
+    // Purchase confirmation flow
+    let pendingPurchase = null;
+    function attemptPurchase() {
+        const item = shopItems[shopIndex];
+        const map = i18n[currentLang] || i18n.ru;
+        // check funds first
+        if (state.coins < item.price) { alert(map.notEnough); return; }
+        pendingPurchase = item;
+        const overlay = document.getElementById('confirm-overlay');
+        const iconEl = document.getElementById('confirm-icon');
+        const nameEl = document.getElementById('confirm-name');
+        const descEl = document.getElementById('confirm-desc');
+        const priceEl = document.getElementById('confirm-price');
+        const shopMap = (map.shop_items && map.shop_items[item.id]) ? map.shop_items[item.id] : null;
+        if (iconEl) iconEl.innerText = item.icon || '🏷️';
+        if (nameEl) nameEl.innerText = shopMap && shopMap.name ? shopMap.name : item.name;
+        if (descEl) descEl.innerText = shopMap && shopMap.desc ? shopMap.desc : (item.desc || '');
+        if (priceEl) priceEl.innerText = item.price > 0 ? `${item.price.toLocaleString()} 💰` : (map.free || 'БЕСПЛАТНО');
+        overlay.classList.add('active');
+    }
+
+    function processPurchaseConfirmed() {
+        if (!pendingPurchase) return;
+        const item = pendingPurchase;
+        // perform purchase (reuse handleShopAction behavior for buying)
+        if (!state.ownedItems.includes(item.id) && !state.ownedItems.includes(item.icon)) {
+            state.coins -= item.price;
+            state.ownedItems.push(item.type === 'avatar' ? item.icon : item.id);
+            if (item.type === 'avatar') state.currentAvatar = item.icon;
+            // generate promo code for promos
+            if (item.type === 'promo') {
+                const code = `WALTACH-${Math.random().toString(36).slice(2,9).toUpperCase()}`;
+                state.promoCodes[item.id] = code;
+            }
+            // auto-equip frames purchased through confirm flow as well
+            if (item.type === 'frame') {
+                state.activeFrame = item.id;
+            }
+        }
+        savePlayerState();
+        render(); updateShopUI(); renderInventory();
+        showToast((i18n[currentLang] && i18n[currentLang].purchaseSuccess) || 'Success');
+        pendingPurchase = null;
+        document.getElementById('confirm-overlay').classList.remove('active');
+    }
+
+    function cancelPurchase() {
+        pendingPurchase = null;
+        document.getElementById('confirm-overlay').classList.remove('active');
+        showToast((i18n[currentLang] && i18n[currentLang].purchaseCancelled) || 'Cancelled');
+    }
+
+    function showToast(text, timeout = 1600) {
+        const t = document.getElementById('purchase-toast');
+        t.innerText = text;
+        t.style.display = 'block';
+        setTimeout(() => t.style.display = 'none', timeout);
+    }
+
+    // wire confirm buttons
+    document.addEventListener('DOMContentLoaded', () => {
+        const ok = document.getElementById('confirm-ok');
+        const cancel = document.getElementById('confirm-cancel');
+        if (ok) ok.onclick = processPurchaseConfirmed;
+        if (cancel) cancel.onclick = cancelPurchase;
+        // override buy button: if item is already owned -> toggle/equip immediately, otherwise open confirmation
+        const buyBtn = document.getElementById('buy-btn');
+        if (buyBtn) buyBtn.onclick = () => {
+            const item = shopItems[shopIndex];
+            const isOwned = state.ownedItems.includes(item.icon) || state.ownedItems.includes(item.id);
+            if (isOwned) {
+                // toggle/equip via unified handler
+                handleShopAction();
+            } else {
+                attemptPurchase();
+            }
+        };
+        // promo modal buttons
+        const promoCopy = document.getElementById('promo-copy');
+        const promoClose = document.getElementById('promo-close');
+        if (promoCopy) promoCopy.onclick = () => {
+            const code = document.getElementById('promo-code').innerText || '';
+            try { navigator.clipboard.writeText(code); showToast((i18n[currentLang] && i18n[currentLang].promoCopied) || 'Copied'); }
+            catch(e) { showToast('Copied'); }
+        };
+        if (promoClose) promoClose.onclick = () => document.getElementById('promo-overlay').classList.remove('active');
+    });
+
+    function showPromoCode(itemId) {
+        const map = i18n[currentLang] || i18n.ru;
+        const item = shopItems.find(s => s.id === itemId) || { icon: '🎟️', name: itemId, desc: '' };
+        const code = state.promoCodes && state.promoCodes[itemId] ? state.promoCodes[itemId] : ('WALTACH-' + Math.random().toString(36).slice(2,8).toUpperCase());
+        // ensure stored
+        state.promoCodes = state.promoCodes || {};
+        state.promoCodes[itemId] = code;
+        savePlayerState();
+        const overlay = document.getElementById('promo-overlay');
+        const icon = document.getElementById('promo-icon'); if (icon) icon.innerText = item.icon || '🎟️';
+        const name = document.getElementById('promo-name'); if (name) name.innerText = (map.shop_items && map.shop_items[itemId] && map.shop_items[itemId].name) ? map.shop_items[itemId].name : item.name;
+        const desc = document.getElementById('promo-desc'); if (desc) desc.innerText = (map.shop_items && map.shop_items[itemId] && map.shop_items[itemId].desc) ? map.shop_items[itemId].desc : (item.desc || '');
+        const codeEl = document.getElementById('promo-code'); if (codeEl) codeEl.innerText = code;
+        const warn = document.getElementById('promo-warning'); if (warn) warn.innerText = map.promoWarning || 'Do not share this code';
+        const copyBtn = document.getElementById('promo-copy'); if(copyBtn) copyBtn.innerText = map.promoCopy || 'COPY';
+        const closeBtn = document.getElementById('promo-close'); if(closeBtn) closeBtn.innerText = map.promoClose || 'CLOSE';
+        overlay.classList.add('active');
+    }
+
+    // Unified shop action: buy / equip / toggle for avatars, frames, promos, and items
+    function handleShopAction() {
+        const item = shopItems[shopIndex];
+        const isOwned = state.ownedItems.includes(item.icon) || state.ownedItems.includes(item.id);
+        const map = i18n[currentLang] || i18n.ru;
+        if (isOwned) {
+            // already owned -> toggle/equip depending on type
+            if (item.type === 'avatar') {
+                state.currentAvatar = item.icon;
+            } else if (item.type === 'frame') {
+                // equip/unequip frame
+                if (state.activeFrame === item.id) state.activeFrame = null;
+                else state.activeFrame = item.id;
+            } else {
+                const idx = state.activeItems.indexOf(item.id);
+                if (idx >= 0) state.activeItems.splice(idx,1);
+                else state.activeItems.push(item.id);
+            }
+        } else {
+            // attempt to purchase
+            if (state.coins < item.price) { alert(map.notEnough || 'Недостаточно монет!'); return; }
+            state.coins -= item.price;
+            state.ownedItems.push(item.type === 'avatar' ? item.icon : item.id);
+            if (item.type === 'avatar') state.currentAvatar = item.icon;
+            if (item.type === 'promo') {
+                const code = `WALTACH-${Math.random().toString(36).slice(2,9).toUpperCase()}`;
+                state.promoCodes[item.id] = code;
+            }
+            if (item.type === 'frame') {
+                // auto-equip frames on purchase
+                state.activeFrame = item.id;
+            }
+        }
+        savePlayerState();
+        render(); updateShopUI(); renderInventory();
+    }
+
+    function nextItem() { shopIndex = (shopIndex + 1) % shopItems.length; updateShopUI(); }
+    function prevItem() { shopIndex = (shopIndex - 1 + shopItems.length) % shopItems.length; updateShopUI(); }
+
+    /* ARENA LOGIC */
+    function toggleIdInput() {
+        const container = document.getElementById('id-input-container');
+        const isHidden = container.style.display === 'none';
+        container.style.display = isHidden ? 'block' : 'none';
+        if(isHidden) document.getElementById('room-id-input').focus();
+    }
+
+    function joinRoom() {
+        const id = document.getElementById('room-id-input').value;
+        if(!id) {
+            alert(i18n[currentLang] ? i18n[currentLang].enterRoomId : "Введите ID комнаты");
+            return;
+        }
+        const connecting = i18n[currentLang] ? i18n[currentLang].connecting : 'Подключение к';
+        document.getElementById('search-status').innerText = `${connecting} #${id}...`;
+        startSearch();
+    }
+
+    function startSearch() {
+        document.getElementById('arena-content').style.display = 'none';
+        document.getElementById('search-view').style.display = 'flex';
+        let sec = 0;
+        timerInterval = setInterval(() => {
+            sec++;
+            let m = Math.floor(sec/60).toString().padStart(2,'0'), s = (sec%60).toString().padStart(2,'0');
+            document.getElementById('timer-val').innerText = `${m}:${s}`;
+        }, 1000);
+    }
+    
+    function cancelSearch() {
+        clearInterval(timerInterval);
+        document.getElementById('arena-content').style.display = 'block';
+        document.getElementById('search-view').style.display = 'none';
+    document.getElementById('search-status').innerText = (i18n[currentLang] ? i18n[currentLang].searchStatus : "Ищем оппонента...");
+        document.getElementById('room-id-input').value = '';
+        document.getElementById('id-input-container').style.display = 'none';
+    }
+
+    /* QUEST LOGIC */
+    function openModal() { document.getElementById('modal-overlay').classList.add('active'); }
+    function closeModal() { document.getElementById('modal-overlay').classList.remove('active'); }
+    function confirmAddQuest() {
+        const val = document.getElementById('quest-input').value;
+        if(!val) return;
+        const diffs = [
+            { name: 'Легко', class: 'diff-easy', xp: 40, coin: 20 },
+            { name: 'Средне', class: 'diff-medium', xp: 90, coin: 45 },
+            { name: 'Хард', class: 'diff-hard', xp: 200, coin: 100 }
+        ];
+        const d = diffs[Math.floor(Math.random()*diffs.length)];
+        state.habits.unshift({ id: Date.now(), title: val, xp: d.xp, coin: d.coin, done: false, diffName: d.name, diffClass: d.class });
+        document.getElementById('quest-input').value = ''; closeModal(); render();
+    }
+    function deleteQuest(id) { state.habits = state.habits.filter(h => h.id !== id); render(); }
+    
+    function toggleQuest(id, event) {
+        const q = state.habits.find(h => h.id === id);
+        if(!q || q.done) return;
+
+        const rect = event.target.getBoundingClientRect();
+        const spawnX = rect.left + rect.width / 2;
+        const spawnY = rect.top;
+
+        const popup = document.createElement('div');
+        popup.className = 'reward-popup';
+        popup.style.left = `${spawnX}px`;
+        popup.style.top = `${spawnY}px`;
+        
+        popup.innerHTML = `
+            <span class="popup-xp">+${q.xp} XP</span>
+            <span class="popup-coin">+${q.coin} 💰</span>
+        `;
+        
+        document.body.appendChild(popup);
+        setTimeout(() => popup.remove(), 1200);
+
+        q.done = true; 
+        state.xp += q.xp; 
+        state.coins += q.coin; 
+        state.totalCompleted++;
+        
+        // Check for level up(s)
+        let leveled = false;
+        while(state.xp >= state.maxXp) {
+            state.xp -= state.maxXp;
+            state.lvl++;
+            state.maxXp += 200;
+            leveled = true;
+        }
+        if (leveled) {
+            // show level-up modal for the new level
+            showLevelUp(state.lvl);
+        }
+        
+        render();
+    }
+
+    function showLevelUp(newLevel) {
+        const map = i18n[currentLang] || i18n.ru;
+        const overlay = document.getElementById('levelup-overlay');
+        const title = document.getElementById('levelup-title');
+        const lvl = document.getElementById('levelup-level');
+        const msg = document.getElementById('levelup-msg');
+        if (title) title.innerText = map.levelupTitle || 'Level Up!';
+        if (lvl) lvl.innerText = `LVL ${newLevel - 1} → ${newLevel}`;
+        if (msg) msg.innerText = map.levelupMsg || 'Great job! Keep going.';
+        overlay.classList.add('active');
+        // spawn confetti
+        const colors = ['#FFD60A','#FF9F0A','#30D158','#0A84FF','#FF375F'];
+        const root = document.querySelector('.phone');
+        const confettiCount = 8; // reduced for mobile performance
+        const confs = [];
+        for (let i=0;i<confettiCount;i++) {
+            const c = document.createElement('div'); c.className = 'confetti';
+            c.style.background = colors[Math.floor(Math.random()*colors.length)];
+            // narrower spread and slight horizontal offset per piece
+            c.style.left = (60 + (i * 18) + (Math.random()*40-20)) + 'px';
+            c.style.top = (100 + (Math.random()*10)) + 'px';
+            c.style.transform = `translateY(0) rotate(${Math.random()*360}deg)`;
+            root.appendChild(c); confs.push(c);
+        }
+        // clear confetti after animation
+        setTimeout(()=>{ confs.forEach(x=>x.remove()); }, 1600);
+        // auto-hide after a few seconds
+        setTimeout(() => { overlay.classList.remove('active'); }, 4200);
+    }
+
+        // Translations map (expanded)
+        let currentLang = 'ru';
+        const i18n = {
+            ru: {
+                quests: 'Твои Квесты', arena: 'Арена', shop: 'Магазин',
+                findOpponent: 'НАЙТИ ОППОНЕНТА', cancel: 'ОТМЕНА', searchStatus: 'Ищем оппонента...', connecting: 'Подключение к',
+                newQuest: 'Новый квест', create: 'СОЗДАТЬ', cancelText: 'Отмена', logout: 'ВЫЙТИ',
+                buy: 'КУПИТЬ', selected: 'ВЫБРАНО', choose: 'ВЫБРАТЬ', active: 'АКТИВНО', free: 'БЕСПЛАТНО',
+                notEnough: 'Недостаточно монет!', enterRoomId: 'Введите ID комнаты',
+                arenaMode: 'Режим битвы', rank: 'Твой ранг: Золото III',
+                blitzTitle: 'Блиц-дуэль', blitzDesc: 'Заверши 3 привычки быстрее',
+                profileName: 'Дмитрий Вальт', profileBadge: 'Элитный Вальтачер',
+                profile: {
+                    title: 'Профиль',
+                    playedSinceLabel: 'В игре с',
+                    healthLabel: 'Здоровье',
+                    healthDesc: 'Apple Health подключен',
+                    goalsLabel: 'Целей',
+                    edit: 'Редактировать',
+                    stats: 'Статистика',
+                    coins: 'Монеты',
+                    rank: 'Ранг'
+                },
+                inventoryActive: 'Активно',
+                inventoryUse: 'Использовать',
+                inventoryActiveShort: 'Вкл',
+                inventoryUseShort: 'Исп',
+                levelupTitle: 'Уровень повышен!',
+                levelupMsg: 'Молодец! Продолжай в том же духе и достигнешь новых высот.' ,
+                inventoryLabel: 'Инвентарь',
+                interfaceLangLabel: 'Язык интерфейса',
+                avatarUpload: 'Загрузить аватар',
+                avatarRemove: 'Удалить',
+                avatarRemoveConfirm: 'Удалить аватар?',
+                levelupCTA: 'OK',
+                inventoryPromo: 'Промокод',
+                inventoryPromoShort: 'Код',
+                promoWarning: 'Не говорите никому этот код. Спасибо, что доверяете нам.',
+                promoCopy: 'КОПИРОВАТЬ',
+                promoClose: 'ЗАКРЫТЬ',
+                promoCopied: 'Скопировано',
+                purchaseConfirm: 'Вы уверены, что хотите купить',
+                purchaseSuccess: 'Покупка успешно завершена',
+                purchaseCancelled: 'Покупка отменена',
+                confirm: 'ПОДТВЕРДИТЬ',
+                cancelShort: 'ОТМЕНА',
+                shop_items: {
+                    av1: { name: 'Хитрый Лис', desc: 'Увеличивает шанс награды' },
+                    av2: { name: 'Дракон', desc: 'Облик для мастеров' },
+                    promo1: { name: 'Скидка: 20% на сервис Rozetka', desc: 'Промокод для сервиса Rozetka — применится при покупке' },
+                    promo2: { name: 'Промокод: 50% на PROM', desc: 'Единоразовый промокод на PROM' },
+                    it1: { name: 'V.I.P Статус', desc: 'Удваивает монеты' },
+                    av3: { name: 'Киборг', desc: 'Технологичное будущее' },
+                    av4: { name: 'Лев', desc: 'Стандартный облик' }
+                }
+            },
+            ua: {
+                quests: 'Твої Завдання', arena: 'Арена', shop: 'Магазин',
+                findOpponent: 'ЗНАЙТИ ОПОНЕНТА', cancel: 'СКАСУВАТИ', searchStatus: 'Шукаємо опонента...', connecting: 'Підключення до',
+                newQuest: 'Нове завдання', create: 'СТВОРИТИ', cancelText: 'Скасувати', logout: 'ВИЙТИ',
+                buy: 'КУПИТИ', selected: 'ОБРАНО', choose: 'ОБРАТИ', active: 'АКТИВНО', free: 'БЕЗКОШТОВНО',
+                notEnough: 'Недостатньо монет!', enterRoomId: 'Введіть ID кімнати',
+                arenaMode: 'Режим бою', rank: 'Твій ранг: Золото III',
+                blitzTitle: 'Бліц-дуель', blitzDesc: 'Заверши 3 звички швидше',
+                profileName: 'Дмитро Вальт', profileBadge: 'Элiта Вальтачеру',
+                profile: {
+                    title: 'Профіль',
+                    playedSinceLabel: 'У грі з',
+                    healthLabel: 'Здоровя',
+                    healthDesc: 'Apple Health підключено',
+                    goalsLabel: 'Цілей',
+                    edit: 'Редагувати',
+                    stats: 'Статистика',
+                    coins: 'Монети',
+                    rank: 'Ранг'
+                },
+                inventoryActive: 'Активно',
+                inventoryUse: 'Використати',
+                inventoryActiveShort: 'Увімк',
+                inventoryUseShort: 'Вик',
+                levelupTitle: 'Рівень підвищено!',
+                levelupMsg: 'Молодець! Продовжуй у тому ж дусі й досягнеш нових висот.',
+                inventoryLabel: 'Інвентар',
+                interfaceLangLabel: 'Мова інтерфейсу',
+                avatarUpload: 'Завантажити аватар',
+                avatarRemove: 'Видалити',
+                avatarRemoveConfirm: 'Видалити аватар?',
+                levelupCTA: 'OK',
+                inventoryPromo: 'Промокод',
+                inventoryPromoShort: 'Код',
+                promoWarning: 'Не кажіть нікому цей код. Дякуємо за довіру.',
+                promoCopy: 'КОПІЮВАТИ',
+                promoClose: 'ЗАКРИТИ',
+                promoCopied: 'Скопійовано',
+                purchaseConfirm: 'Ви впевнені, що хочете купити',
+                purchaseSuccess: 'Покупка успішно завершена',
+                purchaseCancelled: 'Покупку скасовано',
+                confirm: 'ПІДТВЕРДИТИ',
+                cancelShort: 'СКАС',
+                shop_items: {
+                    av1: { name: 'Хитрий Лис', desc: 'Збільшує шанс нагороди' },
+                    av2: { name: 'Дракон', desc: 'Образ для майстрів' },
+                    promo1: { name: 'Знижка: 20% на сервіс X', desc: 'Промокод для сервісу X — застосовується при покупці' },
+                    promo2: { name: 'Промокод: 50% на Y', desc: 'Разовий промокод на Y' },
+                    it1: { name: 'V.I.P Статус', desc: 'Подвоює монети' },
+                    av3: { name: 'Кіборг', desc: 'Технологічне майбутнє' },
+                    av4: { name: 'Лев', desc: 'Стандартний образ' }
+                }
+            },
+            en: {
+                quests: 'Your Quests', arena: 'Arena', shop: 'Shop',
+                findOpponent: 'FIND OPPONENT', cancel: 'CANCEL', searchStatus: 'Searching for opponent...', connecting: 'Connecting to',
+                newQuest: 'New Quest', create: 'CREATE', cancelText: 'Cancel', logout: 'LOGOUT',
+                buy: 'BUY', selected: 'SELECTED', choose: 'CHOOSE', active: 'ACTIVE', free: 'FREE',
+                notEnough: 'Not enough coins!', enterRoomId: 'Enter room ID',
+                arenaMode: 'Battle Mode', rank: 'Your rank: Gold III',
+                blitzTitle: 'Blitz Duel', blitzDesc: 'Complete 3 habits faster',
+                profileName: 'Dmitriy Walt', profileBadge: 'Elite Waltacher',
+                profile: {
+                    title: 'Profile',
+                    playedSinceLabel: 'Playing since',
+                    healthLabel: 'Health',
+                    healthDesc: 'Apple Health connected',
+                    goalsLabel: 'Goals',
+                    edit: 'Edit',
+                    stats: 'Stats',
+                    coins: 'Coins',
+                    rank: 'Rank'
+                },
+                inventoryActive: 'Active',
+                inventoryUse: 'Use',
+                inventoryActiveShort: 'On',
+                inventoryUseShort: 'Use',
+                levelupTitle: 'Level Up!',
+                levelupMsg: 'Great job! Keep going and you’ll reach even greater heights.',
+                inventoryLabel: 'Inventory',
+                interfaceLangLabel: 'Interface language',
+                avatarUpload: 'Upload avatar',
+                avatarRemove: 'Remove',
+                avatarRemoveConfirm: 'Remove avatar?',
+                levelupCTA: 'OK',
+                inventoryPromo: 'Promo',
+                inventoryPromoShort: 'Code',
+                promoWarning: 'Do not share this code with anyone. Thank you for trusting us.',
+                promoCopy: 'COPY',
+                promoClose: 'CLOSE',
+                promoCopied: 'COPIED',
+                purchaseConfirm: 'Are you sure you want to buy',
+                purchaseSuccess: 'Purchase completed successfully',
+                purchaseCancelled: 'Purchase cancelled',
+                confirm: 'CONFIRM',
+                cancelShort: 'CANCEL',
+                shop_items: {
+                    av1: { name: 'Cunning Fox', desc: 'Increases reward chance' },
+                    av2: { name: 'Dragon', desc: 'Skin for masters' },
+                    promo1: { name: '20% off service X', desc: 'Promo code for service X — applied on checkout' },
+                    promo2: { name: '50% voucher for Y', desc: 'One-time voucher for Y' },
+                    it1: { name: 'V.I.P Status', desc: 'Doubles coins' },
+                    av3: { name: 'Cyborg', desc: 'Technological future' },
+                    av4: { name: 'Lion', desc: 'Standard skin' }
+                }
+            }
+        };
+
+        function setLanguage(lang) {
+            if (!i18n[lang]) lang = 'ru';
+            currentLang = lang;
+            localStorage.setItem('waltach_lang', lang);
+            applyTranslations(lang);
+            // update active button styles
+            document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+            const btn = document.getElementById('lang-' + lang);
+            if (btn) btn.classList.add('active');
+        }
+
+        function applyTranslations(lang) {
+            const map = i18n[lang] || i18n.ru;
+            const elQuests = document.getElementById('lbl-quests'); if(elQuests) elQuests.innerText = map.quests;
+            const elArena = document.getElementById('lbl-arena'); if(elArena) elArena.innerText = map.arena;
+            const elShop = document.getElementById('lbl-shop'); if(elShop) elShop.innerText = map.shop;
+            const arenaMode = document.getElementById('lbl-arena-mode'); if(arenaMode) arenaMode.innerText = map.arenaMode || map.arena;
+            const rank = document.getElementById('lbl-rank'); if(rank) rank.innerText = map.rank;
+            const blitzTitle = document.getElementById('lbl-blitz'); if(blitzTitle) blitzTitle.innerText = map.blitzTitle;
+            const blitzDesc = document.getElementById('lbl-blitz-desc'); if(blitzDesc) blitzDesc.innerText = map.blitzDesc;
+            const profileName = document.querySelector('#page-profile h2'); if(profileName) profileName.innerText = (map.profileName || profileName.innerText);
+            const profileBadge = document.querySelector('.diff-tag.diff-medium'); if(profileBadge) profileBadge.innerText = (map.profileBadge || profileBadge.innerText);
+            const findBtn = document.getElementById('btn-find'); if(findBtn) findBtn.innerText = map.findOpponent;
+            const cancelBtn = document.getElementById('btn-cancel-search'); if(cancelBtn) cancelBtn.innerText = map.cancel;
+            const searchStatus = document.getElementById('search-status'); if(searchStatus) searchStatus.innerText = map.searchStatus;
+            const modalTitle = document.getElementById('modal-title'); if(modalTitle) modalTitle.innerText = map.newQuest;
+            const createBtn = document.getElementById('modal-create'); if(createBtn) createBtn.innerText = map.create;
+            const cancelModal = document.getElementById('modal-cancel'); if(cancelModal) cancelModal.innerText = map.cancelText;
+            const logout = document.getElementById('btn-logout'); if(logout) logout.innerText = map.logout;
+            // shop nav buttons
+            const shopPrev = document.getElementById('shop-prev'); if(shopPrev) shopPrev.innerText = '‹';
+            const shopNext = document.getElementById('shop-next'); if(shopNext) shopNext.innerText = '›';
+            // update buy button via updateShopUI so it's consistent
+            updateShopUI();
+            // profile labels
+            if (map.profile) {
+                const p = map.profile;
+                const pageProfile = document.getElementById('page-profile');
+                const titleEl = document.getElementById('page-profile'); // header already replaced above
+                const lblPlayedSince = document.getElementById('lbl-played-since'); if(lblPlayedSince) lblPlayedSince.innerText = p.playedSinceLabel || lblPlayedSince.innerText;
+                const playedSince = document.getElementById('played-since'); if(playedSince) playedSince.innerText = playedSince.innerText; // keep date
+                const lblHealth = document.getElementById('lbl-health'); if(lblHealth) lblHealth.innerText = p.healthLabel || lblHealth.innerText;
+                const lblHealthDesc = document.getElementById('lbl-health-desc'); if(lblHealthDesc) lblHealthDesc.innerText = p.healthDesc || lblHealthDesc.innerText;
+                const lblGoals = document.getElementById('lbl-goals'); if(lblGoals) lblGoals.innerText = p.goalsLabel || lblGoals.innerText;
+            }
+            // inventory label
+            const invLabel = document.getElementById('lbl-inventory'); if(invLabel) invLabel.innerText = (map.inventoryLabel || 'Инвентарь');
+            // interface language label
+            const ifaceLabel = document.getElementById('lbl-interface-lang'); if(ifaceLabel) ifaceLabel.innerText = (map.interfaceLangLabel || 'Язык интерфейса');
+            // avatar upload/remove buttons
+            const upBtn = document.getElementById('btn-upload-avatar'); if (upBtn) upBtn.innerText = (map.avatarUpload || 'Загрузить аватар');
+            const remBtn = document.getElementById('btn-remove-avatar'); if (remBtn) remBtn.innerText = (map.avatarRemove || 'Удалить');
+            // ensure inventory buttons have translated labels
+            renderInventory();
+            // levelup CTA
+            const lvlOk = document.getElementById('levelup-ok'); if(lvlOk) { lvlOk.innerText = (map.levelupCTA || 'OK'); lvlOk.onclick = () => document.getElementById('levelup-overlay').classList.remove('active'); }
+            // confirm modal buttons and text
+            const confirmOk = document.getElementById('confirm-ok'); if(confirmOk) confirmOk.innerText = map.confirm || 'ПОДТВЕРДИТЬ';
+            const confirmCancel = document.getElementById('confirm-cancel'); if(confirmCancel) confirmCancel.innerText = map.cancelShort || 'ОТМЕНА';
+            const confirmText = document.getElementById('confirm-text'); if(confirmText && !pendingPurchase) confirmText.innerText = map.purchaseConfirm || 'Подтвердите покупку';
+            // default confirm fields if none pending
+            const confirmName = document.getElementById('confirm-name'); if(confirmName && !pendingPurchase) confirmName.innerText = map.shop_items && map.shop_items.promo1 ? map.shop_items.promo1.name : 'Промокод';
+            const confirmDesc = document.getElementById('confirm-desc'); if(confirmDesc && !pendingPurchase) confirmDesc.innerText = map.shop_items && map.shop_items.promo1 ? map.shop_items.promo1.desc : '';
+        }
+
+        // Initialize saved language
+        (function(){
+            const saved = localStorage.getItem('waltach_lang') || 'ru';
+            setLanguage(saved);
+        })();
+    // Load player/shop state
+    loadPlayerState();
+    function render() {
+        document.getElementById('coin-val').innerText = state.coins.toLocaleString();
+        document.getElementById('lvl-num').innerText = state.lvl;
+        document.getElementById('xp-bar').style.width = (state.xp / state.maxXp * 100) + '%';
+        document.getElementById('xp-text').innerText = `${state.xp} / ${state.maxXp}`;
+        document.getElementById('total-done').innerText = state.totalCompleted;
+        // Render avatar: prefer uploaded image, otherwise emoji/icon
+        document.querySelectorAll('.current-avatar-display').forEach(el => {
+            if (state.avatarImage) {
+                let img = el.querySelector('img');
+                if (!img) { img = document.createElement('img'); img.style.width = '100%'; img.style.height = '100%'; img.style.objectFit = 'cover'; img.style.borderRadius = '50%'; el.innerText = ''; el.appendChild(img); }
+                img.src = state.avatarImage;
+            } else {
+                if (el.querySelector('img')) el.querySelector('img').remove();
+                el.innerText = state.currentAvatar || '';
+            }
+            // render frame element in the hero-circle parent
+            const circle = el.closest('.hero-circle');
+            if (circle) {
+                // remove existing frame
+                const old = circle.querySelector('.avatar-frame'); if (old) old.remove();
+                if (state.activeFrame) {
+                    const f = document.createElement('div'); f.className = `avatar-frame ${state.activeFrame}`; circle.appendChild(f);
+                }
+            }
+        });
+        
+        const list = document.getElementById('quest-list');
+        list.innerHTML = '';
+        state.habits.forEach(h => {
+            const card = document.createElement('div');
+            card.className = `habit-card ${h.done ? 'done' : ''}`;
+            card.innerHTML = `<div><span class="diff-tag ${h.diffClass}">${h.diffName}</span><h3 style="margin:5px 0 0; font-size:15px;">${h.title}</h3></div>
+                <div class="habit-actions">
+                    <button class="delete-btn" onclick="deleteQuest(${h.id})">×</button>
+                    <div class="check-circle ${h.done ? 'active' : ''}" onclick="toggleQuest(${h.id}, event)">${h.done ? '✓' : ''}</div>
+                </div>`;
+            list.appendChild(card);
+        });
+    }
+
+    render();
+    renderInventory();
+
+    // Avatar upload/preview/apply handlers (new UI: handle + remove icon + confirm modal)
+    document.addEventListener('DOMContentLoaded', () => {
+        const fileInput = document.getElementById('avatar-input');
+        const handle = document.getElementById('avatar-handle');
+        const removeIcon = document.getElementById('avatar-remove-icon');
+        const confirmOverlay = document.getElementById('avatar-confirm-overlay');
+        const avatarPreview = document.getElementById('avatar-preview');
+        const avatarApply = document.getElementById('avatar-apply');
+        const avatarCancel = document.getElementById('avatar-cancel');
+
+        let pendingDataUrl = null;
+
+        if (handle && fileInput) handle.onclick = () => fileInput.click();
+
+        if (fileInput) fileInput.onchange = (e) => {
+            const f = e.target.files && e.target.files[0];
+            if (!f) return;
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                pendingDataUrl = ev.target.result;
+                if (avatarPreview) avatarPreview.src = pendingDataUrl;
+                if (confirmOverlay) confirmOverlay.classList.add('active');
+            };
+            reader.readAsDataURL(f);
+        };
+
+        if (avatarApply) avatarApply.onclick = () => {
+            // if pendingDataUrl is set -> applying new avatar
+            if (pendingDataUrl) {
+                state.avatarImage = pendingDataUrl;
+                savePlayerState(); render(); renderInventory();
+            } else if (confirmOverlay && confirmOverlay.dataset.mode === 'delete') {
+                // deleting existing avatar
+                state.avatarImage = null; savePlayerState(); render(); renderInventory();
+            }
+            pendingDataUrl = null;
+            if (confirmOverlay) { confirmOverlay.classList.remove('active'); confirmOverlay.dataset.mode = ''; }
+            if (fileInput) fileInput.value = '';
+        };
+        if (avatarCancel) avatarCancel.onclick = () => {
+            pendingDataUrl = null;
+            if (confirmOverlay) confirmOverlay.classList.remove('active');
+            if (fileInput) fileInput.value = '';
+        };
+
+        if (removeIcon) removeIcon.onclick = () => {
+            // open confirm modal in delete mode, preview current avatar
+            if (!confirmOverlay) return;
+            confirmOverlay.dataset.mode = 'delete';
+            pendingDataUrl = null;
+            if (avatarPreview) avatarPreview.src = state.avatarImage || '';
+            const nameEl = document.getElementById('avatar-confirm-name'); if (nameEl) nameEl.innerText = (i18n[currentLang] && i18n[currentLang].avatarRemove) || 'Удалить';
+            const descEl = document.getElementById('avatar-confirm-desc'); if (descEl) descEl.innerText = (i18n[currentLang] && i18n[currentLang].avatarRemoveConfirm) || 'Удалить аватар?';
+            if (confirmOverlay) confirmOverlay.classList.add('active');
+        };
+    });
+
+    // home-bar drag to go back to desktop (index)
+    (function(){
+        const bar = document.querySelector('.home-bar');
+        const phone = document.querySelector('.phone');
+        if(!bar || !phone) return;
+    let dragging = false, startY = 0, currentTranslate = 0, pointerId = null;
+    // track for velocity detection
+    let lastY = 0, lastT = 0, velocity = 0;
+
+        function setTranslate(y){ phone.style.transform = `translateY(${y}px)`; }
+        function setOpacity(o){ phone.style.opacity = String(Math.max(0.12, Math.min(1, o))); }
+
+        bar.addEventListener('pointerdown', e => {
+            dragging = true;
+            startY = e.clientY;
+            pointerId = e.pointerId;
+            bar.setPointerCapture(pointerId);
+            // clear any transition while dragging
+            phone.style.transition = '';
+            lastY = e.clientY; lastT = performance.now(); velocity = 0;
+        });
+
+        bar.addEventListener('pointermove', e => {
+            if(!dragging || e.pointerId !== pointerId) return;
+            const now = performance.now();
+            const dy = e.clientY - lastY; const dt = Math.max(1, now - lastT);
+            velocity = dy / dt; // px per ms
+            lastY = e.clientY; lastT = now;
+            const rawDy = e.clientY - startY;
+            // only allow upward movement (negative dy). Apply a damping for nicer feel.
+            const rawMove = Math.min(0, rawDy);
+            const translate = Math.round(rawMove * 0.6); // damping
+            currentTranslate = rawMove; // keep raw value for threshold test
+            setTranslate(translate);
+            // reduce opacity slightly as user drags up
+            const opacity = 1 + (translate / (window.innerHeight * 0.6));
+            setOpacity(opacity);
+        });
+
+        function endDrag(e) {
+            if(!dragging) return; dragging = false;
+            try { bar.releasePointerCapture(pointerId); } catch(_) {}
+            const threshold = -120; // raw pixels user must drag upwards
+            const velocityThreshold = -1.2; // px/ms upward
+            // If the user's upward velocity exceeds threshold, treat as flick
+            if (velocity <= velocityThreshold || currentTranslate <= threshold) {
+                // dismiss: animate phone off-screen and fade
+                phone.style.transition = 'transform 260ms cubic-bezier(.2,.9,.3,1), opacity 260ms ease';
+                setTranslate(-window.innerHeight);
+                setOpacity(0);
+                // navigate after animation completes
+                setTimeout(()=>{ window.location.href = 'index(working-start-place).html'; }, 280);
+            } else {
+                // revert to original position
+                phone.style.transition = 'transform 220ms cubic-bezier(.2,.9,.3,1), opacity 220ms ease';
+                setTranslate(0);
+                setOpacity(1);
+                setTimeout(()=>{ phone.style.transition = ''; }, 260);
+            }
+            // reset velocity state
+            lastY = 0; lastT = 0; velocity = 0;
+        }
+
+        bar.addEventListener('pointerup', endDrag);
+        bar.addEventListener('pointercancel', endDrag);
+        bar.addEventListener('lostpointercapture', endDrag);
+    })();
+</script>
+</body>
+</html>
